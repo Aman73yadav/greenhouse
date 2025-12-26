@@ -1,0 +1,252 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Download, 
+  FileText, 
+  FileSpreadsheet, 
+  Calendar,
+  Check
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { HistoricalData } from '@/types/greenhouse';
+import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+
+interface DataExportProps {
+  data: HistoricalData[];
+}
+
+const DataExport = ({ data }: DataExportProps) => {
+  const [dateRange, setDateRange] = useState<'24h' | '7d' | '30d' | 'custom'>('7d');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const filterDataByRange = () => {
+    const now = Date.now();
+    const ranges = {
+      '24h': 24 * 60 * 60 * 1000,
+      '7d': 7 * 24 * 60 * 60 * 1000,
+      '30d': 30 * 24 * 60 * 60 * 1000,
+      'custom': 30 * 24 * 60 * 60 * 1000,
+    };
+    
+    return data.filter(d => 
+      now - new Date(d.timestamp).getTime() < ranges[dateRange]
+    );
+  };
+
+  const exportToCSV = () => {
+    setIsExporting(true);
+    
+    try {
+      const filteredData = filterDataByRange();
+      
+      const headers = ['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Moisture (%)', 'CO2 (ppm)', 'Light (lux)'];
+      const rows = filteredData.map(d => [
+        new Date(d.timestamp).toISOString(),
+        d.temperature.toFixed(2),
+        d.humidity.toFixed(2),
+        d.moisture.toFixed(2),
+        d.co2.toFixed(2),
+        d.light.toFixed(2),
+      ]);
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `greenhouse_data_${dateRange}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('CSV exported successfully!');
+    } catch (error) {
+      toast.error('Failed to export CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportToPDF = () => {
+    setIsExporting(true);
+    
+    try {
+      const filteredData = filterDataByRange();
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(16, 185, 129);
+      doc.text('Smart Greenhouse Report', 20, 20);
+      
+      // Subtitle
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Data Range: ${dateRange} | Generated: ${new Date().toLocaleString()}`, 20, 30);
+      
+      // Summary section
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Summary Statistics', 20, 45);
+      
+      const avgTemp = filteredData.reduce((a, b) => a + b.temperature, 0) / filteredData.length;
+      const avgHumidity = filteredData.reduce((a, b) => a + b.humidity, 0) / filteredData.length;
+      const avgMoisture = filteredData.reduce((a, b) => a + b.moisture, 0) / filteredData.length;
+      const avgCO2 = filteredData.reduce((a, b) => a + b.co2, 0) / filteredData.length;
+      const avgLight = filteredData.reduce((a, b) => a + b.light, 0) / filteredData.length;
+      
+      doc.setFontSize(11);
+      doc.text(`Average Temperature: ${avgTemp.toFixed(1)}°C`, 25, 55);
+      doc.text(`Average Humidity: ${avgHumidity.toFixed(1)}%`, 25, 62);
+      doc.text(`Average Soil Moisture: ${avgMoisture.toFixed(1)}%`, 25, 69);
+      doc.text(`Average CO2: ${avgCO2.toFixed(0)} ppm`, 25, 76);
+      doc.text(`Average Light: ${avgLight.toFixed(0)} lux`, 25, 83);
+      
+      // Data points section
+      doc.setFontSize(14);
+      doc.text('Recent Data Points', 20, 100);
+      
+      doc.setFontSize(9);
+      let yPos = 110;
+      const recentData = filteredData.slice(-20);
+      
+      // Table header
+      doc.setFillColor(16, 185, 129);
+      doc.rect(20, yPos - 4, 170, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Timestamp', 22, yPos);
+      doc.text('Temp', 70, yPos);
+      doc.text('Humidity', 95, yPos);
+      doc.text('Moisture', 125, yPos);
+      doc.text('CO2', 155, yPos);
+      
+      doc.setTextColor(0, 0, 0);
+      yPos += 10;
+      
+      recentData.forEach((d, i) => {
+        if (yPos > 280) return;
+        
+        if (i % 2 === 0) {
+          doc.setFillColor(240, 240, 240);
+          doc.rect(20, yPos - 4, 170, 7, 'F');
+        }
+        
+        doc.text(new Date(d.timestamp).toLocaleString(), 22, yPos);
+        doc.text(`${d.temperature.toFixed(1)}°C`, 70, yPos);
+        doc.text(`${d.humidity.toFixed(0)}%`, 95, yPos);
+        doc.text(`${d.moisture.toFixed(0)}%`, 125, yPos);
+        doc.text(`${d.co2.toFixed(0)}`, 155, yPos);
+        
+        yPos += 7;
+      });
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Generated by Smart Greenhouse Monitoring System', 20, 290);
+      
+      doc.save(`greenhouse_report_${dateRange}_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast.success('PDF report generated!');
+    } catch (error) {
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card p-6"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <Download className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-xl font-display font-bold">Export Data</h3>
+          <p className="text-sm text-muted-foreground">Download sensor history</p>
+        </div>
+      </div>
+
+      {/* Date Range Selection */}
+      <div className="mb-6">
+        <label className="text-sm font-medium mb-2 block">
+          <Calendar className="w-4 h-4 inline mr-2" />
+          Select Date Range
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {(['24h', '7d', '30d'] as const).map((range) => (
+            <button
+              key={range}
+              onClick={() => setDateRange(range)}
+              className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                dateRange === range
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {range === '24h' ? 'Last 24 Hours' : 
+               range === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Data Preview */}
+      <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+        <p className="text-sm text-muted-foreground mb-2">Data Preview</p>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-muted-foreground">Records:</span>
+            <span className="ml-2 font-medium">{filterDataByRange().length}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Size:</span>
+            <span className="ml-2 font-medium">~{(filterDataByRange().length * 0.1).toFixed(1)} KB</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Export Buttons */}
+      <div className="grid grid-cols-2 gap-4">
+        <Button
+          onClick={exportToCSV}
+          disabled={isExporting}
+          className="gap-2"
+          variant="outline"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Export CSV
+        </Button>
+        <Button
+          onClick={exportToPDF}
+          disabled={isExporting}
+          className="gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          Export PDF
+        </Button>
+      </div>
+
+      {isExporting && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground"
+        >
+          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          Generating...
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
+
+export default DataExport;

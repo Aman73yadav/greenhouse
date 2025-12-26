@@ -1,12 +1,257 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React, { useState, Suspense, lazy } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  Leaf, 
+  LayoutDashboard, 
+  Cpu, 
+  Calendar, 
+  BarChart3,
+  Settings,
+  Bell,
+  Box,
+  Sprout
+} from 'lucide-react';
+import { useGreenhouseData } from '@/hooks/useGreenhouseData';
+import SensorCard from '@/components/dashboard/SensorCard';
+import ControlPanel from '@/components/dashboard/ControlPanel';
+import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
+import IoTDeviceManager from '@/components/dashboard/IoTDeviceManager';
+import ScheduleManager from '@/components/dashboard/ScheduleManager';
+import AlertsPanel from '@/components/dashboard/AlertsPanel';
+import DataExport from '@/components/dashboard/DataExport';
+import PlantCard from '@/components/dashboard/PlantCard';
+import greenhouseHero from '@/assets/greenhouse-hero.jpg';
+
+const Greenhouse3D = lazy(() => import('@/components/three/Greenhouse3D'));
+const GrowthSimulation3D = lazy(() => import('@/components/three/GrowthSimulation3D'));
+const VirtualField3D = lazy(() => import('@/components/three/VirtualField3D'));
+
+const navItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'plants', label: 'Plants', icon: Sprout },
+  { id: '3d', label: '3D View', icon: Box },
+  { id: 'devices', label: 'IoT Devices', icon: Cpu },
+  { id: 'schedules', label: 'Schedules', icon: Calendar },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+];
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const {
+    sensorData,
+    plants,
+    devices,
+    schedules,
+    controls,
+    alerts,
+    historicalData,
+    updateControl,
+    acknowledgeAlert,
+    toggleSchedule,
+  } = useGreenhouseData();
+
+  const tempSensor = sensorData.find(s => s.type === 'temperature');
+  const humiditySensor = sensorData.find(s => s.type === 'humidity');
+  const moistureSensor = sensorData.find(s => s.type === 'moisture');
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-gradient-hero grid-pattern">
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-glass-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-primary rounded-xl">
+                <Leaf className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-display font-bold text-gradient-primary">
+                  Smart Greenhouse
+                </h1>
+                <p className="text-xs text-muted-foreground">Cloud-Based Monitoring System</p>
+              </div>
+            </div>
+            
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
+                      activeTab === item.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+            
+            <div className="flex items-center gap-3">
+              <button className="relative p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Bell className="w-5 h-5" />
+                {alerts.filter(a => !a.acknowledged).length > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+                )}
+              </button>
+              <button className="p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Settings className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Hero Banner */}
+        {activeTab === 'dashboard' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative h-64 rounded-2xl overflow-hidden mb-8"
+          >
+            <img 
+              src={greenhouseHero} 
+              alt="Smart Greenhouse" 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-transparent" />
+            <div className="absolute inset-0 flex items-center p-8">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-display font-bold mb-2">
+                  Welcome to Your <span className="text-gradient-primary">Smart Greenhouse</span>
+                </h2>
+                <p className="text-muted-foreground max-w-lg">
+                  Real-time monitoring and control of your greenhouse environment with IoT sensors and AI-powered insights.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-8">
+            {/* Sensor Grid */}
+            <section>
+              <h3 className="text-xl font-display font-bold mb-4">Live Sensors</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {sensorData.map((sensor) => (
+                  <SensorCard key={sensor.id} sensor={sensor} />
+                ))}
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <ControlPanel controls={controls} onUpdateControl={updateControl} />
+              </div>
+              <AlertsPanel alerts={alerts} onAcknowledge={acknowledgeAlert} />
+            </div>
+
+            <AnalyticsCharts data={historicalData} />
+          </div>
+        )}
+
+        {/* Plants Tab */}
+        {activeTab === 'plants' && (
+          <div className="space-y-8">
+            <h3 className="text-xl font-display font-bold">Plant Management</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {plants.map((plant) => (
+                <PlantCard key={plant.id} plant={plant} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 3D View Tab */}
+        {activeTab === '3d' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-display font-bold mb-4">3D Greenhouse</h3>
+                <div className="h-[400px]">
+                  <Suspense fallback={<div className="h-full flex items-center justify-center">Loading 3D...</div>}>
+                    <Greenhouse3D 
+                      sensorData={{
+                        temperature: tempSensor?.value || 24,
+                        humidity: humiditySensor?.value || 65,
+                        moisture: moistureSensor?.value || 70,
+                      }}
+                      irrigationActive={controls.irrigation}
+                    />
+                  </Suspense>
+                </div>
+              </div>
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-display font-bold mb-4">Growth Simulation</h3>
+                <div className="h-[400px]">
+                  <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
+                    <GrowthSimulation3D />
+                  </Suspense>
+                </div>
+              </div>
+            </div>
+            <div className="glass-card p-4">
+              <h3 className="text-lg font-display font-bold mb-4">Virtual Field Visualization</h3>
+              <div className="h-[500px]">
+                <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
+                  <VirtualField3D 
+                    temperature={tempSensor?.value}
+                    humidity={humiditySensor?.value}
+                    moisture={moistureSensor?.value}
+                  />
+                </Suspense>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* IoT Devices Tab */}
+        {activeTab === 'devices' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <IoTDeviceManager devices={devices} />
+            <DataExport data={historicalData} />
+          </div>
+        )}
+
+        {/* Schedules Tab */}
+        {activeTab === 'schedules' && (
+          <ScheduleManager schedules={schedules} onToggleSchedule={toggleSchedule} />
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <AnalyticsCharts data={historicalData} />
+        )}
+      </main>
+
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-glass-border p-2">
+        <div className="flex justify-around">
+          {navItems.slice(0, 5).map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg ${
+                  activeTab === item.id ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-xs">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 };
