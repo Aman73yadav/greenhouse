@@ -9,9 +9,12 @@ import {
   Settings,
   Bell,
   Box,
-  Sprout
+  Sprout,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useGreenhouseData } from '@/hooks/useGreenhouseData';
+import { useAuth } from '@/hooks/useAuth';
 import SensorCard from '@/components/dashboard/SensorCard';
 import ControlPanel from '@/components/dashboard/ControlPanel';
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
@@ -20,11 +23,17 @@ import ScheduleManager from '@/components/dashboard/ScheduleManager';
 import AlertsPanel from '@/components/dashboard/AlertsPanel';
 import DataExport from '@/components/dashboard/DataExport';
 import PlantCard from '@/components/dashboard/PlantCard';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 import greenhouseHero from '@/assets/greenhouse-hero.jpg';
 
 const Greenhouse3D = lazy(() => import('@/components/three/Greenhouse3D'));
 const GrowthSimulation3D = lazy(() => import('@/components/three/GrowthSimulation3D'));
 const VirtualField3D = lazy(() => import('@/components/three/VirtualField3D'));
+const SoilVisualization3D = lazy(() => import('@/components/three/SoilVisualization3D'));
+const PlantGrowth3D = lazy(() => import('@/components/three/PlantGrowth3D'));
+const IrrigationSystem3D = lazy(() => import('@/components/three/IrrigationSystem3D'));
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,6 +46,7 @@ const navItems = [
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { user, signOut } = useAuth();
   const {
     sensorData,
     plants,
@@ -53,6 +63,11 @@ const Index = () => {
   const tempSensor = sensorData.find(s => s.type === 'temperature');
   const humiditySensor = sensorData.find(s => s.type === 'humidity');
   const moistureSensor = sensorData.find(s => s.type === 'moisture');
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-hero grid-pattern">
@@ -99,9 +114,22 @@ const Index = () => {
                   <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
                 )}
               </button>
-              <button className="p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                <Settings className="w-5 h-5" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-lg">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="text-muted-foreground text-sm">
+                    {user?.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -176,39 +204,56 @@ const Index = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="glass-card p-4">
                 <h3 className="text-lg font-display font-bold mb-4">3D Greenhouse</h3>
-                <div className="h-[400px]">
-                  <Suspense fallback={<div className="h-full flex items-center justify-center">Loading 3D...</div>}>
-                    <Greenhouse3D 
-                      sensorData={{
-                        temperature: tempSensor?.value || 24,
-                        humidity: humiditySensor?.value || 65,
-                        moisture: moistureSensor?.value || 70,
-                      }}
-                      irrigationActive={controls.irrigation}
-                    />
-                  </Suspense>
-                </div>
-              </div>
-              <div className="glass-card p-4">
-                <h3 className="text-lg font-display font-bold mb-4">Growth Simulation</h3>
-                <div className="h-[400px]">
-                  <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
-                    <GrowthSimulation3D />
-                  </Suspense>
-                </div>
-              </div>
-            </div>
-            <div className="glass-card p-4">
-              <h3 className="text-lg font-display font-bold mb-4">Virtual Field Visualization</h3>
-              <div className="h-[500px]">
-                <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
-                  <VirtualField3D 
-                    temperature={tempSensor?.value}
-                    humidity={humiditySensor?.value}
-                    moisture={moistureSensor?.value}
+                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading 3D...</div>}>
+                  <Greenhouse3D 
+                    sensorData={{
+                      temperature: tempSensor?.value || 24,
+                      humidity: humiditySensor?.value || 65,
+                      moisture: moistureSensor?.value || 70,
+                    }}
+                    irrigationActive={controls.irrigation}
                   />
                 </Suspense>
               </div>
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-display font-bold mb-4">Growth Simulation</h3>
+                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
+                  <GrowthSimulation3D />
+                </Suspense>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-display font-bold mb-4">Soil Layers & Root System</h3>
+                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
+                  <SoilVisualization3D moisture={moistureSensor?.value || 50} growthStage={60} />
+                </Suspense>
+              </div>
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-display font-bold mb-4">Plant Growth Process</h3>
+                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
+                  <PlantGrowth3D />
+                </Suspense>
+              </div>
+            </div>
+            
+            <div className="glass-card p-4">
+              <h3 className="text-lg font-display font-bold mb-4">Irrigation System</h3>
+              <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
+                <IrrigationSystem3D irrigationActive={controls.irrigation} mistingActive={controls.misting} />
+              </Suspense>
+            </div>
+            
+            <div className="glass-card p-4">
+              <h3 className="text-lg font-display font-bold mb-4">Virtual Field Visualization</h3>
+              <Suspense fallback={<div className="h-[500px] flex items-center justify-center">Loading...</div>}>
+                <VirtualField3D 
+                  temperature={tempSensor?.value}
+                  humidity={humiditySensor?.value}
+                  moisture={moistureSensor?.value}
+                />
+              </Suspense>
             </div>
           </div>
         )}
