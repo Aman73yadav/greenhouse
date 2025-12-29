@@ -213,7 +213,7 @@ const GrowthSimulation3D = ({
         <PerspectiveCamera makeDefault position={[6, 4, 6]} fov={40} />
         <OrbitControls 
           enablePan={false}
-          enableZoom={true}
+          enableZoom={false}
           minDistance={5}
           maxDistance={15}
           maxPolarAngle={Math.PI / 2}
