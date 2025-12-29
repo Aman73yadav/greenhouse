@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { RotateCcw } from 'lucide-react';
 
 interface PlantProps {
   growthStage: number;
@@ -134,7 +135,7 @@ const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position }) => {
   );
 };
 
-const PlantScene: React.FC<{ plants: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[] }> = ({ plants }) => {
+const PlantScene: React.FC<{ plants: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[]; controlsRef: React.RefObject<any> }> = ({ plants, controlsRef }) => {
   return (
     <>
       <ambientLight intensity={0.5} />
@@ -170,6 +171,7 @@ const PlantScene: React.FC<{ plants: { type: 'tomato' | 'lettuce' | 'pepper' | '
       </group>
       
       <OrbitControls 
+        ref={controlsRef}
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
@@ -194,11 +196,30 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
     { type: 'lettuce', growthStage: 90 },
   ] 
 }) => {
+  const controlsRef = useRef<any>(null);
+  
+  const handleResetView = () => {
+    if (controlsRef.current) {
+      controlsRef.current.object.position.set(4, 3, 4);
+      controlsRef.current.target.set(0, 0, 0);
+      controlsRef.current.update();
+    }
+  };
+
   return (
-    <div className="w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-gray-800 to-gray-900">
+    <div className="relative w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-gray-800 to-gray-900">
       <Canvas camera={{ position: [4, 3, 4], fov: 50 }}>
-        <PlantScene plants={plants} />
+        <PlantScene plants={plants} controlsRef={controlsRef} />
       </Canvas>
+      
+      {/* Reset View Button */}
+      <button
+        onClick={handleResetView}
+        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors"
+        title="Reset View"
+      >
+        <RotateCcw className="w-4 h-4" />
+      </button>
     </div>
   );
 };

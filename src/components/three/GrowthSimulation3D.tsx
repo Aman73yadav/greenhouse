@@ -1,7 +1,8 @@
 import { Suspense, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { RotateCcw } from 'lucide-react';
 
 const GROWTH_STAGES = [
   { week: 1, name: 'Seed', description: 'Germination begins', heightPercentage: 5 },
@@ -176,6 +177,20 @@ interface GrowthSimulation3DProps {
   onWeekChange?: (week: number) => void;
 }
 
+const CameraController = ({ controlsRef }: { controlsRef: React.RefObject<any> }) => {
+  const { camera } = useThree();
+  
+  useEffect(() => {
+    camera.position.set(6, 4, 6);
+    if (controlsRef.current) {
+      controlsRef.current.target.set(0, 0.5, 0);
+      controlsRef.current.update();
+    }
+  }, [camera, controlsRef]);
+  
+  return null;
+};
+
 const GrowthSimulation3D = ({ 
   simulationSpeed = 3000,
   isPaused = false,
@@ -183,6 +198,7 @@ const GrowthSimulation3D = ({
 }: GrowthSimulation3DProps) => {
   const [currentWeek, setCurrentWeek] = useState(1);
   const [growthPercentage, setGrowthPercentage] = useState(5);
+  const controlsRef = useRef<any>(null);
 
   useEffect(() => {
     if (isPaused) return;
@@ -207,11 +223,20 @@ const GrowthSimulation3D = ({
 
   const currentStage = GROWTH_STAGES.find(s => s.week === currentWeek);
 
+  const handleResetView = () => {
+    if (controlsRef.current) {
+      controlsRef.current.object.position.set(6, 4, 6);
+      controlsRef.current.target.set(0, 0.5, 0);
+      controlsRef.current.update();
+    }
+  };
+
   return (
     <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
       <Canvas shadows>
         <PerspectiveCamera makeDefault position={[6, 4, 6]} fov={40} />
         <OrbitControls 
+          ref={controlsRef}
           enablePan={false}
           enableZoom={false}
           minDistance={5}
@@ -219,6 +244,7 @@ const GrowthSimulation3D = ({
           maxPolarAngle={Math.PI / 2}
           target={[0, 0.5, 0]}
         />
+        <CameraController controlsRef={controlsRef} />
         
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
@@ -241,6 +267,15 @@ const GrowthSimulation3D = ({
           />
         </Suspense>
       </Canvas>
+      
+      {/* Reset View Button */}
+      <button
+        onClick={handleResetView}
+        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors z-10"
+        title="Reset View"
+      >
+        <RotateCcw className="w-4 h-4" />
+      </button>
       
       {/* Stage info overlay */}
       <div className="absolute bottom-4 left-4 right-4 glass-card p-4">
