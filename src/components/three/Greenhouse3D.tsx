@@ -271,7 +271,7 @@ const Greenhouse3D = ({
         <PerspectiveCamera makeDefault position={[12, 8, 12]} fov={45} />
         <OrbitControls 
           enablePan={true}
-          enableZoom={true}
+          enableZoom={false}
           enableRotate={true}
           minDistance={8}
           maxDistance={25}
