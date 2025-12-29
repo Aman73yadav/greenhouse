@@ -268,14 +268,15 @@ const Greenhouse3D = ({
   return (
     <div className="w-full h-full min-h-[400px] rounded-xl overflow-hidden">
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[8, 6, 8]} fov={50} />
+        <PerspectiveCamera makeDefault position={[12, 8, 12]} fov={45} />
         <OrbitControls 
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minDistance={5}
-          maxDistance={20}
+          minDistance={8}
+          maxDistance={25}
           maxPolarAngle={Math.PI / 2.1}
+          target={[0, 1, 0]}
         />
         
         {/* Lighting */}

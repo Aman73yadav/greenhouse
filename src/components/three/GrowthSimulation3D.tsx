@@ -210,13 +210,14 @@ const GrowthSimulation3D = ({
   return (
     <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[4, 3, 4]} fov={50} />
+        <PerspectiveCamera makeDefault position={[6, 4, 6]} fov={40} />
         <OrbitControls 
           enablePan={false}
           enableZoom={true}
-          minDistance={3}
-          maxDistance={10}
+          minDistance={5}
+          maxDistance={15}
           maxPolarAngle={Math.PI / 2}
+          target={[0, 0.5, 0]}
         />
         
         <ambientLight intensity={0.5} />

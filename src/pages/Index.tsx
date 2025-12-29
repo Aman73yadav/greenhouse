@@ -22,6 +22,8 @@ import IoTDeviceManager from '@/components/dashboard/IoTDeviceManager';
 import ScheduleManager from '@/components/dashboard/ScheduleManager';
 import AlertsPanel from '@/components/dashboard/AlertsPanel';
 import DataExport from '@/components/dashboard/DataExport';
+import ScheduleCalendar from '@/components/dashboard/ScheduleCalendar';
+import DeviceRegistration from '@/components/dashboard/DeviceRegistration';
 import PlantCard from '@/components/dashboard/PlantCard';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -260,15 +262,23 @@ const Index = () => {
 
         {/* IoT Devices Tab */}
         {activeTab === 'devices' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <IoTDeviceManager devices={devices} />
-            <DataExport data={historicalData} />
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <IoTDeviceManager devices={devices} />
+              <DataExport data={historicalData} />
+            </div>
+            <DeviceRegistration onDeviceRegistered={(device) => {
+              console.log('Device registered:', device);
+            }} />
           </div>
         )}
 
         {/* Schedules Tab */}
         {activeTab === 'schedules' && (
-          <ScheduleManager schedules={schedules} onToggleSchedule={toggleSchedule} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ScheduleManager schedules={schedules} onToggleSchedule={toggleSchedule} />
+            <ScheduleCalendar schedules={schedules} />
+          </div>
         )}
 
         {/* Analytics Tab */}
