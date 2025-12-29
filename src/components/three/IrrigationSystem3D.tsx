@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { RotateCcw } from 'lucide-react';
 
 interface WaterDropletProps {
   startPosition: [number, number, number];
@@ -150,7 +151,7 @@ const DripLine: React.FC<DripLineProps> = ({ startPos, endPos, active }) => {
   );
 };
 
-const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: boolean }> = ({ irrigationActive, mistingActive }) => {
+const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: boolean; controlsRef: React.RefObject<any> }> = ({ irrigationActive, mistingActive, controlsRef }) => {
   return (
     <>
       <ambientLight intensity={0.4} />
@@ -215,6 +216,7 @@ const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: bool
       </mesh>
       
       <OrbitControls 
+        ref={controlsRef}
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
@@ -234,11 +236,30 @@ const IrrigationSystem3D: React.FC<IrrigationSystem3DProps> = ({
   irrigationActive = true, 
   mistingActive = false 
 }) => {
+  const controlsRef = useRef<any>(null);
+  
+  const handleResetView = () => {
+    if (controlsRef.current) {
+      controlsRef.current.object.position.set(5, 4, 5);
+      controlsRef.current.target.set(0, 0, 0);
+      controlsRef.current.update();
+    }
+  };
+
   return (
-    <div className="w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-sky-300 to-sky-100">
+    <div className="relative w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-sky-300 to-sky-100">
       <Canvas camera={{ position: [5, 4, 5], fov: 50 }}>
-        <IrrigationScene irrigationActive={irrigationActive} mistingActive={mistingActive} />
+        <IrrigationScene irrigationActive={irrigationActive} mistingActive={mistingActive} controlsRef={controlsRef} />
       </Canvas>
+      
+      {/* Reset View Button */}
+      <button
+        onClick={handleResetView}
+        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors"
+        title="Reset View"
+      >
+        <RotateCcw className="w-4 h-4" />
+      </button>
     </div>
   );
 };

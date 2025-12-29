@@ -1,7 +1,8 @@
 import { Suspense, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Html, Float } from '@react-three/drei';
 import * as THREE from 'three';
+import { RotateCcw } from 'lucide-react';
 
 interface PlantProps {
   position: [number, number, number];
@@ -261,15 +262,41 @@ interface Greenhouse3DProps {
   irrigationActive?: boolean;
 }
 
+const CameraController = ({ controlsRef }: { controlsRef: React.RefObject<any> }) => {
+  const { camera } = useThree();
+  
+  useEffect(() => {
+    // Set initial camera position
+    camera.position.set(12, 8, 12);
+    if (controlsRef.current) {
+      controlsRef.current.target.set(0, 1, 0);
+      controlsRef.current.update();
+    }
+  }, [camera, controlsRef]);
+  
+  return null;
+};
+
 const Greenhouse3D = ({ 
   sensorData = { temperature: 24.5, humidity: 65, moisture: 72 },
   irrigationActive = false 
 }: Greenhouse3DProps) => {
+  const controlsRef = useRef<any>(null);
+  
+  const handleResetView = () => {
+    if (controlsRef.current) {
+      controlsRef.current.object.position.set(12, 8, 12);
+      controlsRef.current.target.set(0, 1, 0);
+      controlsRef.current.update();
+    }
+  };
+
   return (
-    <div className="w-full h-full min-h-[400px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
       <Canvas shadows>
         <PerspectiveCamera makeDefault position={[12, 8, 12]} fov={45} />
         <OrbitControls 
+          ref={controlsRef}
           enablePan={true}
           enableZoom={false}
           enableRotate={true}
@@ -278,6 +305,7 @@ const Greenhouse3D = ({
           maxPolarAngle={Math.PI / 2.1}
           target={[0, 1, 0]}
         />
+        <CameraController controlsRef={controlsRef} />
         
         {/* Lighting */}
         <ambientLight intensity={0.4} />
@@ -303,6 +331,15 @@ const Greenhouse3D = ({
           <meshStandardMaterial color="#1a472a" />
         </mesh>
       </Canvas>
+      
+      {/* Reset View Button */}
+      <button
+        onClick={handleResetView}
+        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors"
+        title="Reset View"
+      >
+        <RotateCcw className="w-4 h-4" />
+      </button>
     </div>
   );
 };
