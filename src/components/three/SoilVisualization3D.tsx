@@ -1,8 +1,8 @@
-import React, { useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import React, { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
-import { RotateCcw } from 'lucide-react';
+import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 
 interface SoilLayerProps {
   position: [number, number, number];
@@ -113,7 +113,7 @@ const Worm: React.FC<WormProps> = ({ position }) => {
   );
 };
 
-const SoilScene: React.FC<{ moisture: number; growthStage: number; controlsRef: React.RefObject<any> }> = ({ moisture, growthStage, controlsRef }) => {
+const SoilScene: React.FC<{ moisture: number; growthStage: number; controlsRef: React.RefObject<any>; enableZoom: boolean }> = ({ moisture, growthStage, controlsRef, enableZoom }) => {
   const soilLayers = [
     { y: 0.6, color: '#228B22', height: 0.2, label: 'Organic Matter' },
     { y: 0.3, color: '#3D2314', height: 0.4, label: 'Topsoil (A Horizon)' },
@@ -159,7 +159,7 @@ const SoilScene: React.FC<{ moisture: number; growthStage: number; controlsRef: 
       <OrbitControls 
         ref={controlsRef}
         enablePan={true} 
-        enableZoom={true} 
+        enableZoom={enableZoom} 
         enableRotate={true}
         minDistance={3}
         maxDistance={10}
@@ -173,32 +173,23 @@ interface SoilVisualization3DProps {
   growthStage: number;
 }
 
-const SoilVisualization3D: React.FC<SoilVisualization3DProps> = ({ moisture, growthStage }) => {
-  const controlsRef = useRef<any>(null);
-  
-  const handleResetView = () => {
-    if (controlsRef.current) {
-      controlsRef.current.object.position.set(5, 3, 5);
-      controlsRef.current.target.set(0, 0, 0);
-      controlsRef.current.update();
-    }
-  };
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [5, 3, 5];
+const DEFAULT_TARGET: [number, number, number] = [0, 0, 0];
 
+const SoilVisualization3D: React.FC<SoilVisualization3DProps> = ({ moisture, growthStage }) => {
   return (
-    <div className="relative w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-sky-200 to-amber-100">
-      <Canvas camera={{ position: [5, 3, 5], fov: 50 }}>
-        <SoilScene moisture={moisture} growthStage={growthStage} controlsRef={controlsRef} />
-      </Canvas>
-      
-      {/* Reset View Button */}
-      <button
-        onClick={handleResetView}
-        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors"
-        title="Reset View"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
-    </div>
+    <Fullscreen3DWrapper
+      title="Soil Layers & Root System"
+      defaultCameraPosition={DEFAULT_CAMERA_POSITION}
+      defaultTarget={DEFAULT_TARGET}
+      className="bg-gradient-to-b from-sky-200 to-amber-100"
+    >
+      {({ enableZoom, controlsRef }) => (
+        <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
+          <SoilScene moisture={moisture} growthStage={growthStage} controlsRef={controlsRef} enableZoom={enableZoom} />
+        </Canvas>
+      )}
+    </Fullscreen3DWrapper>
   );
 };
 

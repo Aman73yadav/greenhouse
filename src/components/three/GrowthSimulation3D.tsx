@@ -1,8 +1,8 @@
 import { Suspense, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Text, Html } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { RotateCcw } from 'lucide-react';
+import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 
 const GROWTH_STAGES = [
   { week: 1, name: 'Seed', description: 'Germination begins', heightPercentage: 5 },
@@ -177,19 +177,8 @@ interface GrowthSimulation3DProps {
   onWeekChange?: (week: number) => void;
 }
 
-const CameraController = ({ controlsRef }: { controlsRef: React.RefObject<any> }) => {
-  const { camera } = useThree();
-  
-  useEffect(() => {
-    camera.position.set(6, 4, 6);
-    if (controlsRef.current) {
-      controlsRef.current.target.set(0, 0.5, 0);
-      controlsRef.current.update();
-    }
-  }, [camera, controlsRef]);
-  
-  return null;
-};
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [6, 4, 6];
+const DEFAULT_TARGET: [number, number, number] = [0, 0.5, 0];
 
 const GrowthSimulation3D = ({ 
   simulationSpeed = 3000,
@@ -198,7 +187,6 @@ const GrowthSimulation3D = ({
 }: GrowthSimulation3DProps) => {
   const [currentWeek, setCurrentWeek] = useState(1);
   const [growthPercentage, setGrowthPercentage] = useState(5);
-  const controlsRef = useRef<any>(null);
 
   useEffect(() => {
     if (isPaused) return;
@@ -223,89 +211,79 @@ const GrowthSimulation3D = ({
 
   const currentStage = GROWTH_STAGES.find(s => s.week === currentWeek);
 
-  const handleResetView = () => {
-    if (controlsRef.current) {
-      controlsRef.current.object.position.set(6, 4, 6);
-      controlsRef.current.target.set(0, 0.5, 0);
-      controlsRef.current.update();
-    }
-  };
-
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
-      <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[6, 4, 6]} fov={40} />
-        <OrbitControls 
-          ref={controlsRef}
-          enablePan={false}
-          enableZoom={false}
-          minDistance={5}
-          maxDistance={15}
-          maxPolarAngle={Math.PI / 2}
-          target={[0, 0.5, 0]}
-        />
-        <CameraController controlsRef={controlsRef} />
-        
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
-        <pointLight position={[-3, 3, -3]} intensity={0.3} color="#ffb74d" />
-        
-        <Suspense fallback={null}>
-          <SoilLayer />
+    <Fullscreen3DWrapper
+      title="Growth Simulation"
+      defaultCameraPosition={DEFAULT_CAMERA_POSITION}
+      defaultTarget={DEFAULT_TARGET}
+    >
+      {({ enableZoom, controlsRef }) => (
+        <>
+          <Canvas shadows>
+            <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={40} />
+            <OrbitControls 
+              ref={controlsRef}
+              enablePan={false}
+              enableZoom={enableZoom}
+              minDistance={5}
+              maxDistance={15}
+              maxPolarAngle={Math.PI / 2}
+              target={DEFAULT_TARGET}
+            />
+            
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
+            <pointLight position={[-3, 3, -3]} intensity={0.3} color="#ffb74d" />
+            
+            <Suspense fallback={null}>
+              <SoilLayer />
+              
+              {/* Main plant */}
+              <GrowingPlant growthPercentage={growthPercentage} position={[0, 0, 0]} />
+              
+              {/* Additional plants for context */}
+              <GrowingPlant 
+                growthPercentage={Math.max(0, growthPercentage - 15)} 
+                position={[-1, 0, 0.5]} 
+              />
+              <GrowingPlant 
+                growthPercentage={Math.max(0, growthPercentage - 30)} 
+                position={[1, 0, -0.5]} 
+              />
+            </Suspense>
+          </Canvas>
           
-          {/* Main plant */}
-          <GrowingPlant growthPercentage={growthPercentage} position={[0, 0, 0]} />
-          
-          {/* Additional plants for context */}
-          <GrowingPlant 
-            growthPercentage={Math.max(0, growthPercentage - 15)} 
-            position={[-1, 0, 0.5]} 
-          />
-          <GrowingPlant 
-            growthPercentage={Math.max(0, growthPercentage - 30)} 
-            position={[1, 0, -0.5]} 
-          />
-        </Suspense>
-      </Canvas>
-      
-      {/* Reset View Button */}
-      <button
-        onClick={handleResetView}
-        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors z-10"
-        title="Reset View"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
-      
-      {/* Stage info overlay */}
-      <div className="absolute bottom-4 left-4 right-4 glass-card p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm text-muted-foreground">Week {currentWeek} of 16</div>
-            <div className="text-lg font-display font-bold text-primary">
-              {currentStage?.name}
+          {/* Stage info overlay */}
+          <div className="absolute bottom-4 left-4 right-4 glass-card p-4 z-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">Week {currentWeek} of 16</div>
+                <div className="text-lg font-display font-bold text-primary">
+                  {currentStage?.name}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {currentStage?.description}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-gradient-primary">
+                  {growthPercentage}%
+                </div>
+                <div className="text-xs text-muted-foreground">Growth Progress</div>
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {currentStage?.description}
+            
+            {/* Progress bar */}
+            <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                style={{ width: `${(currentWeek / 16) * 100}%` }}
+              />
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-gradient-primary">
-              {growthPercentage}%
-            </div>
-            <div className="text-xs text-muted-foreground">Growth Progress</div>
-          </div>
-        </div>
-        
-        {/* Progress bar */}
-        <div className="mt-3 h-2 bg-muted rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-            style={{ width: `${(currentWeek / 16) * 100}%` }}
-          />
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Fullscreen3DWrapper>
   );
 };
 

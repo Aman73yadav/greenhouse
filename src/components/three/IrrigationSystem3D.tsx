@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { RotateCcw } from 'lucide-react';
+import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 
 interface WaterDropletProps {
   startPosition: [number, number, number];
@@ -151,7 +151,7 @@ const DripLine: React.FC<DripLineProps> = ({ startPos, endPos, active }) => {
   );
 };
 
-const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: boolean; controlsRef: React.RefObject<any> }> = ({ irrigationActive, mistingActive, controlsRef }) => {
+const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: boolean; controlsRef: React.RefObject<any>; enableZoom: boolean }> = ({ irrigationActive, mistingActive, controlsRef, enableZoom }) => {
   return (
     <>
       <ambientLight intensity={0.4} />
@@ -218,7 +218,7 @@ const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: bool
       <OrbitControls 
         ref={controlsRef}
         enablePan={true}
-        enableZoom={true}
+        enableZoom={enableZoom}
         enableRotate={true}
         minDistance={4}
         maxDistance={15}
@@ -232,35 +232,26 @@ interface IrrigationSystem3DProps {
   mistingActive?: boolean;
 }
 
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [5, 4, 5];
+const DEFAULT_TARGET: [number, number, number] = [0, 0, 0];
+
 const IrrigationSystem3D: React.FC<IrrigationSystem3DProps> = ({ 
   irrigationActive = true, 
   mistingActive = false 
 }) => {
-  const controlsRef = useRef<any>(null);
-  
-  const handleResetView = () => {
-    if (controlsRef.current) {
-      controlsRef.current.object.position.set(5, 4, 5);
-      controlsRef.current.target.set(0, 0, 0);
-      controlsRef.current.update();
-    }
-  };
-
   return (
-    <div className="relative w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-sky-300 to-sky-100">
-      <Canvas camera={{ position: [5, 4, 5], fov: 50 }}>
-        <IrrigationScene irrigationActive={irrigationActive} mistingActive={mistingActive} controlsRef={controlsRef} />
-      </Canvas>
-      
-      {/* Reset View Button */}
-      <button
-        onClick={handleResetView}
-        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors"
-        title="Reset View"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
-    </div>
+    <Fullscreen3DWrapper
+      title="Irrigation System"
+      defaultCameraPosition={DEFAULT_CAMERA_POSITION}
+      defaultTarget={DEFAULT_TARGET}
+      className="bg-gradient-to-b from-sky-300 to-sky-100"
+    >
+      {({ enableZoom, controlsRef }) => (
+        <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
+          <IrrigationScene irrigationActive={irrigationActive} mistingActive={mistingActive} controlsRef={controlsRef} enableZoom={enableZoom} />
+        </Canvas>
+      )}
+    </Fullscreen3DWrapper>
   );
 };
 
