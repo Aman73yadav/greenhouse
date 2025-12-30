@@ -2,6 +2,7 @@ import { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Sky, Cloud, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 
 interface FieldPlantProps {
   position: [number, number, number];
@@ -66,7 +67,7 @@ const FieldPlant = ({ position, type, growthStage }: FieldPlantProps) => {
   );
 };
 
-const Field = ({ temperature, humidity }: { temperature: number; humidity: number }) => {
+const Field = ({ temperature, humidity, controlsRef, enableZoom }: { temperature: number; humidity: number; controlsRef: React.RefObject<any>; enableZoom: boolean }) => {
   const plants = useMemo(() => {
     const plantData: Array<{ pos: [number, number, number]; type: 'tomato' | 'corn' | 'lettuce' | 'carrot'; growth: number }> = [];
     const types: Array<'tomato' | 'corn' | 'lettuce' | 'carrot'> = ['tomato', 'corn', 'lettuce', 'carrot'];
@@ -154,6 +155,15 @@ const Field = ({ temperature, humidity }: { temperature: number; humidity: numbe
           </Html>
         </group>
       ))}
+      
+      <OrbitControls 
+        ref={controlsRef}
+        enablePan={true}
+        enableZoom={enableZoom}
+        minDistance={5}
+        maxDistance={30}
+        maxPolarAngle={Math.PI / 2.1}
+      />
     </>
   );
 };
@@ -164,58 +174,57 @@ interface VirtualField3DProps {
   moisture?: number;
 }
 
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [12, 8, 12];
+const DEFAULT_TARGET: [number, number, number] = [0, 0, 0];
+
 const VirtualField3D = ({ 
   temperature = 24,
   humidity = 65,
   moisture = 70 
 }: VirtualField3DProps) => {
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
-      <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[12, 8, 12]} fov={45} />
-        <OrbitControls 
-          enablePan={true}
-          enableZoom={true}
-          minDistance={5}
-          maxDistance={30}
-          maxPolarAngle={Math.PI / 2.1}
-        />
-        
-        <ambientLight intensity={0.4} />
-        <directionalLight 
-          position={[10, 15, 10]} 
-          intensity={1.2} 
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-        />
-        
-        <Suspense fallback={null}>
-          <Field temperature={temperature} humidity={humidity} />
-        </Suspense>
-      </Canvas>
-      
-      {/* Environment indicators */}
-      <div className="absolute top-4 right-4 glass-card p-3 space-y-2">
-        <div className="text-xs text-muted-foreground">Real-time Environment</div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-2 h-2 rounded-full bg-temperature" />
-          <span>{temperature.toFixed(1)}°C</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-2 h-2 rounded-full bg-humidity" />
-          <span>{humidity.toFixed(0)}% RH</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-2 h-2 rounded-full bg-moisture" />
-          <span>{moisture.toFixed(0)}% Soil</span>
-        </div>
-      </div>
-      
-      {/* Instructions */}
-      <div className="absolute bottom-4 left-4 text-xs text-muted-foreground glass-card px-3 py-2">
-        Drag to rotate • Scroll to zoom • Environmental effects respond to sensor data
-      </div>
-    </div>
+    <Fullscreen3DWrapper
+      title="Virtual Field"
+      defaultCameraPosition={DEFAULT_CAMERA_POSITION}
+      defaultTarget={DEFAULT_TARGET}
+    >
+      {({ enableZoom, controlsRef }) => (
+        <>
+          <Canvas shadows>
+            <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={45} />
+            
+            <ambientLight intensity={0.4} />
+            <directionalLight 
+              position={[10, 15, 10]} 
+              intensity={1.2} 
+              castShadow
+              shadow-mapSize={[2048, 2048]}
+            />
+            
+            <Suspense fallback={null}>
+              <Field temperature={temperature} humidity={humidity} controlsRef={controlsRef} enableZoom={enableZoom} />
+            </Suspense>
+          </Canvas>
+          
+          {/* Environment indicators */}
+          <div className="absolute top-16 right-3 glass-card p-3 space-y-2 z-10">
+            <div className="text-xs text-muted-foreground">Real-time Environment</div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full bg-temperature" />
+              <span>{temperature.toFixed(1)}°C</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full bg-humidity" />
+              <span>{humidity.toFixed(0)}% RH</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full bg-moisture" />
+              <span>{moisture.toFixed(0)}% Soil</span>
+            </div>
+          </div>
+        </>
+      )}
+    </Fullscreen3DWrapper>
   );
 };
 

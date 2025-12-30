@@ -1,8 +1,8 @@
 import { Suspense, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Html, Float } from '@react-three/drei';
 import * as THREE from 'three';
-import { RotateCcw } from 'lucide-react';
+import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 
 interface PlantProps {
   position: [number, number, number];
@@ -262,85 +262,59 @@ interface Greenhouse3DProps {
   irrigationActive?: boolean;
 }
 
-const CameraController = ({ controlsRef }: { controlsRef: React.RefObject<any> }) => {
-  const { camera } = useThree();
-  
-  useEffect(() => {
-    // Set initial camera position
-    camera.position.set(12, 8, 12);
-    if (controlsRef.current) {
-      controlsRef.current.target.set(0, 1, 0);
-      controlsRef.current.update();
-    }
-  }, [camera, controlsRef]);
-  
-  return null;
-};
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [12, 8, 12];
+const DEFAULT_TARGET: [number, number, number] = [0, 1, 0];
 
 const Greenhouse3D = ({ 
   sensorData = { temperature: 24.5, humidity: 65, moisture: 72 },
   irrigationActive = false 
 }: Greenhouse3DProps) => {
-  const controlsRef = useRef<any>(null);
-  
-  const handleResetView = () => {
-    if (controlsRef.current) {
-      controlsRef.current.object.position.set(12, 8, 12);
-      controlsRef.current.target.set(0, 1, 0);
-      controlsRef.current.update();
-    }
-  };
-
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
-      <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[12, 8, 12]} fov={45} />
-        <OrbitControls 
-          ref={controlsRef}
-          enablePan={true}
-          enableZoom={false}
-          enableRotate={true}
-          minDistance={8}
-          maxDistance={25}
-          maxPolarAngle={Math.PI / 2.1}
-          target={[0, 1, 0]}
-        />
-        <CameraController controlsRef={controlsRef} />
-        
-        {/* Lighting */}
-        <ambientLight intensity={0.4} />
-        <directionalLight 
-          position={[10, 10, 5]} 
-          intensity={1} 
-          castShadow 
-          shadow-mapSize={[2048, 2048]}
-        />
-        <pointLight position={[-5, 5, -5]} intensity={0.3} color="#ffb74d" />
-        
-        <Suspense fallback={null}>
-          <AnimatedScene 
-            sensorData={sensorData} 
-            irrigationActive={irrigationActive}
+    <Fullscreen3DWrapper
+      title="3D Greenhouse"
+      defaultCameraPosition={DEFAULT_CAMERA_POSITION}
+      defaultTarget={DEFAULT_TARGET}
+    >
+      {({ enableZoom, controlsRef }) => (
+        <Canvas shadows>
+          <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={45} />
+          <OrbitControls 
+            ref={controlsRef}
+            enablePan={true}
+            enableZoom={enableZoom}
+            enableRotate={true}
+            minDistance={8}
+            maxDistance={25}
+            maxPolarAngle={Math.PI / 2.1}
+            target={DEFAULT_TARGET}
           />
-          <Environment preset="sunset" />
-        </Suspense>
-        
-        {/* Ground plane */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-          <planeGeometry args={[50, 50]} />
-          <meshStandardMaterial color="#1a472a" />
-        </mesh>
-      </Canvas>
-      
-      {/* Reset View Button */}
-      <button
-        onClick={handleResetView}
-        className="absolute top-3 right-3 p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors"
-        title="Reset View"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
-    </div>
+          
+          {/* Lighting */}
+          <ambientLight intensity={0.4} />
+          <directionalLight 
+            position={[10, 10, 5]} 
+            intensity={1} 
+            castShadow 
+            shadow-mapSize={[2048, 2048]}
+          />
+          <pointLight position={[-5, 5, -5]} intensity={0.3} color="#ffb74d" />
+          
+          <Suspense fallback={null}>
+            <AnimatedScene 
+              sensorData={sensorData} 
+              irrigationActive={irrigationActive}
+            />
+            <Environment preset="sunset" />
+          </Suspense>
+          
+          {/* Ground plane */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+            <planeGeometry args={[50, 50]} />
+            <meshStandardMaterial color="#1a472a" />
+          </mesh>
+        </Canvas>
+      )}
+    </Fullscreen3DWrapper>
   );
 };
 
