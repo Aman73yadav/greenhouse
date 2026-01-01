@@ -217,9 +217,9 @@ const GrowthSimulation3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef }) => (
+      {({ enableZoom, controlsRef, performanceMode }) => (
         <>
-          <Canvas shadows>
+          <Canvas shadows={!performanceMode}>
             <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={40} />
             <OrbitControls 
               ref={controlsRef}
@@ -231,9 +231,16 @@ const GrowthSimulation3D = ({
               target={DEFAULT_TARGET}
             />
             
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
-            <pointLight position={[-3, 3, -3]} intensity={0.3} color="#ffb74d" />
+            <ambientLight intensity={performanceMode ? 0.7 : 0.5} />
+            {!performanceMode && (
+              <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
+            )}
+            {performanceMode && (
+              <directionalLight position={[5, 8, 5]} intensity={0.8} />
+            )}
+            {!performanceMode && (
+              <pointLight position={[-3, 3, -3]} intensity={0.3} color="#ffb74d" />
+            )}
             
             <Suspense fallback={null}>
               <SoilLayer />
@@ -241,15 +248,19 @@ const GrowthSimulation3D = ({
               {/* Main plant */}
               <GrowingPlant growthPercentage={growthPercentage} position={[0, 0, 0]} />
               
-              {/* Additional plants for context */}
-              <GrowingPlant 
-                growthPercentage={Math.max(0, growthPercentage - 15)} 
-                position={[-1, 0, 0.5]} 
-              />
-              <GrowingPlant 
-                growthPercentage={Math.max(0, growthPercentage - 30)} 
-                position={[1, 0, -0.5]} 
-              />
+              {/* Additional plants for context - skip in performance mode */}
+              {!performanceMode && (
+                <>
+                  <GrowingPlant 
+                    growthPercentage={Math.max(0, growthPercentage - 15)} 
+                    position={[-1, 0, 0.5]} 
+                  />
+                  <GrowingPlant 
+                    growthPercentage={Math.max(0, growthPercentage - 30)} 
+                    position={[1, 0, -0.5]} 
+                  />
+                </>
+              )}
             </Suspense>
           </Canvas>
           

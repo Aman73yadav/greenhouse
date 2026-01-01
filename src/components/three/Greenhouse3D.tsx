@@ -275,8 +275,8 @@ const Greenhouse3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef }) => (
-        <Canvas shadows>
+      {({ enableZoom, controlsRef, performanceMode }) => (
+        <Canvas shadows={!performanceMode}>
           <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={45} />
           <OrbitControls 
             ref={controlsRef}
@@ -289,26 +289,33 @@ const Greenhouse3D = ({
             target={DEFAULT_TARGET}
           />
           
-          {/* Lighting */}
-          <ambientLight intensity={0.4} />
-          <directionalLight 
-            position={[10, 10, 5]} 
-            intensity={1} 
-            castShadow 
-            shadow-mapSize={[2048, 2048]}
-          />
-          <pointLight position={[-5, 5, -5]} intensity={0.3} color="#ffb74d" />
+          {/* Lighting - reduced in performance mode */}
+          <ambientLight intensity={performanceMode ? 0.6 : 0.4} />
+          {!performanceMode && (
+            <directionalLight 
+              position={[10, 10, 5]} 
+              intensity={1} 
+              castShadow 
+              shadow-mapSize={[2048, 2048]}
+            />
+          )}
+          {performanceMode && (
+            <directionalLight position={[10, 10, 5]} intensity={0.8} />
+          )}
+          {!performanceMode && (
+            <pointLight position={[-5, 5, -5]} intensity={0.3} color="#ffb74d" />
+          )}
           
           <Suspense fallback={null}>
             <AnimatedScene 
               sensorData={sensorData} 
               irrigationActive={irrigationActive}
             />
-            <Environment preset="sunset" />
+            {!performanceMode && <Environment preset="sunset" />}
           </Suspense>
           
           {/* Ground plane */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow={!performanceMode}>
             <planeGeometry args={[50, 50]} />
             <meshStandardMaterial color="#1a472a" />
           </mesh>

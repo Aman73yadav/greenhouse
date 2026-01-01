@@ -10,7 +10,9 @@ import {
   X,
   Lock,
   Unlock,
-  Focus
+  Focus,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 
 interface CameraPreset {
@@ -26,6 +28,7 @@ interface Fullscreen3DWrapperProps {
     enableZoom: boolean;
     controlsRef: React.RefObject<any>;
     onCameraChange?: () => void;
+    performanceMode: boolean;
   }) => React.ReactNode;
   title?: string;
   defaultCameraPosition?: [number, number, number];
@@ -47,6 +50,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isZoomLocked, setIsZoomLocked] = useState(false);
+  const [performanceMode, setPerformanceMode] = useState(false);
   const [cameraInfo, setCameraInfo] = useState({ distance: 0, azimuth: 0, polar: 0 });
 
   const presets: CameraPreset[] = [
@@ -165,6 +169,10 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     setIsZoomLocked(!isZoomLocked);
   };
 
+  const togglePerformanceMode = () => {
+    setPerformanceMode(!performanceMode);
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -193,6 +201,9 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         case '4':
           if (presets[3]) handlePresetView(presets[3], 3);
           break;
+        case 'p':
+          togglePerformanceMode();
+          break;
       }
     };
 
@@ -214,10 +225,24 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         enableZoom: zoomEnabled,
         controlsRef,
         onCameraChange: updateCameraInfo,
+        performanceMode,
       })}
       
       {/* Controls Overlay */}
       <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+        {/* Performance Mode Toggle */}
+        <button
+          onClick={togglePerformanceMode}
+          className={`p-2 rounded-lg backdrop-blur-sm border transition-colors ${
+            performanceMode 
+              ? 'bg-primary/20 border-primary/50 text-primary hover:bg-primary/30' 
+              : 'bg-background/80 border-glass-border hover:bg-background'
+          }`}
+          title={performanceMode ? 'Switch to Quality Mode (P)' : 'Switch to Performance Mode (P)'}
+        >
+          {performanceMode ? <Zap className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+        </button>
+        
         {/* Fit to Scene */}
         <button
           onClick={handleFitToScene}
@@ -328,17 +353,26 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">F</kbd> — Toggle fullscreen</li>
                 <li>• <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">R</kbd> — Reset view</li>
+                <li>• <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">P</kbd> — Toggle performance mode</li>
                 <li>• <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">1-4</kbd> — View presets</li>
                 <li>• <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Esc</kbd> — Exit fullscreen</li>
               </ul>
             </div>
           )}
 
-          {/* Zoom status indicator */}
-          <div className={`absolute top-3 left-1/2 -translate-x-1/2 glass-card px-3 py-1 text-xs z-10 ${
-            isZoomLocked ? 'text-destructive' : 'text-muted-foreground'
-          }`}>
-            {isZoomLocked ? 'Zoom locked' : 'Scroll to zoom enabled'}
+          {/* Status indicators */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {performanceMode && (
+              <div className="glass-card px-3 py-1 text-xs text-primary flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                Performance Mode
+              </div>
+            )}
+            <div className={`glass-card px-3 py-1 text-xs ${
+              isZoomLocked ? 'text-destructive' : 'text-muted-foreground'
+            }`}>
+              {isZoomLocked ? 'Zoom locked' : 'Scroll to zoom enabled'}
+            </div>
           </div>
         </>
       )}

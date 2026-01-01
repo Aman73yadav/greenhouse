@@ -67,13 +67,27 @@ const FieldPlant = ({ position, type, growthStage }: FieldPlantProps) => {
   );
 };
 
-const Field = ({ temperature, humidity, controlsRef, enableZoom }: { temperature: number; humidity: number; controlsRef: React.RefObject<any>; enableZoom: boolean }) => {
+const Field = ({ 
+  temperature, 
+  humidity, 
+  controlsRef, 
+  enableZoom,
+  performanceMode 
+}: { 
+  temperature: number; 
+  humidity: number; 
+  controlsRef: React.RefObject<any>; 
+  enableZoom: boolean;
+  performanceMode: boolean;
+}) => {
   const plants = useMemo(() => {
     const plantData: Array<{ pos: [number, number, number]; type: 'tomato' | 'corn' | 'lettuce' | 'carrot'; growth: number }> = [];
     const types: Array<'tomato' | 'corn' | 'lettuce' | 'carrot'> = ['tomato', 'corn', 'lettuce', 'carrot'];
     
-    for (let x = -6; x <= 6; x += 1.5) {
-      for (let z = -4; z <= 4; z += 1.2) {
+    // Reduce plant count in performance mode
+    const step = performanceMode ? 3 : 1.5;
+    for (let x = -6; x <= 6; x += step) {
+      for (let z = -4; z <= 4; z += step * 0.8) {
         plantData.push({
           pos: [x + (Math.random() - 0.5) * 0.3, 0, z + (Math.random() - 0.5) * 0.3],
           type: types[Math.floor(Math.random() * types.length)],
@@ -82,7 +96,7 @@ const Field = ({ temperature, humidity, controlsRef, enableZoom }: { temperature
       }
     }
     return plantData;
-  }, []);
+  }, [performanceMode]);
 
   // Environmental effects based on sensor data
   const sunIntensity = temperature > 25 ? 1.2 : temperature < 15 ? 0.6 : 1;
@@ -91,7 +105,7 @@ const Field = ({ temperature, humidity, controlsRef, enableZoom }: { temperature
   return (
     <>
       {/* Ground */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow={!performanceMode}>
         <planeGeometry args={[20, 15]} />
         <meshStandardMaterial color="#3d2914" roughness={0.95} />
       </mesh>
@@ -114,15 +128,17 @@ const Field = ({ temperature, humidity, controlsRef, enableZoom }: { temperature
         />
       ))}
       
-      {/* Sky and atmosphere */}
-      <Sky 
-        sunPosition={[100, sunIntensity * 50, 100]} 
-        turbidity={8}
-        rayleigh={humidity > 70 ? 4 : 2}
-      />
+      {/* Sky and atmosphere - skip in performance mode */}
+      {!performanceMode && (
+        <Sky 
+          sunPosition={[100, sunIntensity * 50, 100]} 
+          turbidity={8}
+          rayleigh={humidity > 70 ? 4 : 2}
+        />
+      )}
       
-      {/* Clouds based on humidity */}
-      {humidity > 50 && (
+      {/* Clouds based on humidity - skip in performance mode */}
+      {!performanceMode && humidity > 50 && (
         <group>
           <Cloud position={[-10, 8, -5]} speed={0.2} opacity={humidity / 200} />
           <Cloud position={[5, 10, 0]} speed={0.1} opacity={humidity / 150} />
@@ -130,8 +146,10 @@ const Field = ({ temperature, humidity, controlsRef, enableZoom }: { temperature
         </group>
       )}
       
-      {/* Fog effect for high humidity */}
-      <fog attach="fog" args={['#a0c4a0', 10, 50 / fogDensity]} />
+      {/* Fog effect for high humidity - skip in performance mode */}
+      {!performanceMode && (
+        <fog attach="fog" args={['#a0c4a0', 10, 50 / fogDensity]} />
+      )}
       
       {/* Sensor display posts */}
       {[
@@ -188,21 +206,32 @@ const VirtualField3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef }) => (
+      {({ enableZoom, controlsRef, performanceMode }) => (
         <>
-          <Canvas shadows>
+          <Canvas shadows={!performanceMode}>
             <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={45} />
             
-            <ambientLight intensity={0.4} />
-            <directionalLight 
-              position={[10, 15, 10]} 
-              intensity={1.2} 
-              castShadow
-              shadow-mapSize={[2048, 2048]}
-            />
+            <ambientLight intensity={performanceMode ? 0.6 : 0.4} />
+            {!performanceMode && (
+              <directionalLight 
+                position={[10, 15, 10]} 
+                intensity={1.2} 
+                castShadow
+                shadow-mapSize={[2048, 2048]}
+              />
+            )}
+            {performanceMode && (
+              <directionalLight position={[10, 15, 10]} intensity={0.9} />
+            )}
             
             <Suspense fallback={null}>
-              <Field temperature={temperature} humidity={humidity} controlsRef={controlsRef} enableZoom={enableZoom} />
+              <Field 
+                temperature={temperature} 
+                humidity={humidity} 
+                controlsRef={controlsRef} 
+                enableZoom={enableZoom}
+                performanceMode={performanceMode}
+              />
             </Suspense>
           </Canvas>
           
