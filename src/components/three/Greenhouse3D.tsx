@@ -283,8 +283,8 @@ const Greenhouse3D = ({
             enablePan={true}
             enableZoom={enableZoom}
             enableRotate={true}
-            minDistance={8}
-            maxDistance={25}
+            minDistance={14}
+            maxDistance={28}
             maxPolarAngle={Math.PI / 2.1}
             target={DEFAULT_TARGET}
           />
