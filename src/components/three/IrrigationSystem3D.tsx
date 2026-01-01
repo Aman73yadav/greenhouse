@@ -151,12 +151,25 @@ const DripLine: React.FC<DripLineProps> = ({ startPos, endPos, active }) => {
   );
 };
 
-const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: boolean; controlsRef: React.RefObject<any>; enableZoom: boolean }> = ({ irrigationActive, mistingActive, controlsRef, enableZoom }) => {
+const IrrigationScene: React.FC<{ 
+  irrigationActive: boolean; 
+  mistingActive: boolean; 
+  controlsRef: React.RefObject<any>; 
+  enableZoom: boolean;
+  performanceMode: boolean;
+}> = ({ irrigationActive, mistingActive, controlsRef, enableZoom, performanceMode }) => {
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 10, 5]} intensity={0.7} castShadow />
-      <pointLight position={[-3, 3, -3]} intensity={0.3} color="#87CEEB" />
+      <ambientLight intensity={performanceMode ? 0.6 : 0.4} />
+      {!performanceMode && (
+        <directionalLight position={[5, 10, 5]} intensity={0.7} castShadow />
+      )}
+      {performanceMode && (
+        <directionalLight position={[5, 10, 5]} intensity={0.6} />
+      )}
+      {!performanceMode && (
+        <pointLight position={[-3, 3, -3]} intensity={0.3} color="#87CEEB" />
+      )}
       
       {/* Ground/soil bed */}
       <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -172,17 +185,16 @@ const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: bool
         </mesh>
       ))}
       
-      {/* Plants in beds */}
+      {/* Plants in beds - reduced in performance mode */}
       {[-1.5, 1.5].map((z, zi) => (
-        [-2, -1, 0, 1, 2].map((x, xi) => (
+        (performanceMode ? [-2, 0, 2] : [-2, -1, 0, 1, 2]).map((x, xi) => (
           <group key={`${zi}-${xi}`} position={[x, 0, z]}>
-            {/* Simple plant representation */}
             <mesh position={[0, 0.2, 0]}>
               <cylinderGeometry args={[0.02, 0.02, 0.4, 8]} />
               <meshStandardMaterial color="#228B22" />
             </mesh>
             <mesh position={[0, 0.4, 0]}>
-              <sphereGeometry args={[0.15, 8, 8]} />
+              <sphereGeometry args={[0.15, performanceMode ? 6 : 8, performanceMode ? 6 : 8]} />
               <meshStandardMaterial color="#32CD32" />
             </mesh>
           </group>
@@ -195,13 +207,13 @@ const IrrigationScene: React.FC<{ irrigationActive: boolean; mistingActive: bool
         <meshStandardMaterial color="#1E90FF" metalness={0.3} roughness={0.4} />
       </mesh>
       
-      {/* Drip lines */}
-      <DripLine startPos={[-2.5, 0, -1.5]} endPos={[2.5, 0, -1.5]} active={irrigationActive} />
-      <DripLine startPos={[-2.5, 0, 1.5]} endPos={[2.5, 0, 1.5]} active={irrigationActive} />
+      {/* Drip lines - skip water animation in performance mode */}
+      <DripLine startPos={[-2.5, 0, -1.5]} endPos={[2.5, 0, -1.5]} active={!performanceMode && irrigationActive} />
+      <DripLine startPos={[-2.5, 0, 1.5]} endPos={[2.5, 0, 1.5]} active={!performanceMode && irrigationActive} />
       
-      {/* Sprinkler heads */}
-      <SprinklerHead position={[-2, 1.5, 0]} active={mistingActive} />
-      <SprinklerHead position={[2, 1.5, 0]} active={mistingActive} />
+      {/* Sprinkler heads - skip animation in performance mode */}
+      <SprinklerHead position={[-2, 1.5, 0]} active={!performanceMode && mistingActive} />
+      <SprinklerHead position={[2, 1.5, 0]} active={!performanceMode && mistingActive} />
       
       {/* Water tank */}
       <mesh position={[-3.5, 0.5, 0]}>
@@ -246,9 +258,15 @@ const IrrigationSystem3D: React.FC<IrrigationSystem3DProps> = ({
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-sky-300 to-sky-100"
     >
-      {({ enableZoom, controlsRef }) => (
+      {({ enableZoom, controlsRef, performanceMode }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
-          <IrrigationScene irrigationActive={irrigationActive} mistingActive={mistingActive} controlsRef={controlsRef} enableZoom={enableZoom} />
+          <IrrigationScene 
+            irrigationActive={irrigationActive} 
+            mistingActive={mistingActive} 
+            controlsRef={controlsRef} 
+            enableZoom={enableZoom}
+            performanceMode={performanceMode}
+          />
         </Canvas>
       )}
     </Fullscreen3DWrapper>

@@ -113,7 +113,13 @@ const Worm: React.FC<WormProps> = ({ position }) => {
   );
 };
 
-const SoilScene: React.FC<{ moisture: number; growthStage: number; controlsRef: React.RefObject<any>; enableZoom: boolean }> = ({ moisture, growthStage, controlsRef, enableZoom }) => {
+const SoilScene: React.FC<{ 
+  moisture: number; 
+  growthStage: number; 
+  controlsRef: React.RefObject<any>; 
+  enableZoom: boolean;
+  performanceMode: boolean;
+}> = ({ moisture, growthStage, controlsRef, enableZoom, performanceMode }) => {
   const soilLayers = [
     { y: 0.6, color: '#228B22', height: 0.2, label: 'Organic Matter' },
     { y: 0.3, color: '#3D2314', height: 0.4, label: 'Topsoil (A Horizon)' },
@@ -124,9 +130,16 @@ const SoilScene: React.FC<{ moisture: number; growthStage: number; controlsRef: 
 
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
-      <pointLight position={[-5, 5, -5]} intensity={0.3} color="#FFE4B5" />
+      <ambientLight intensity={performanceMode ? 0.6 : 0.4} />
+      {!performanceMode && (
+        <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
+      )}
+      {performanceMode && (
+        <directionalLight position={[5, 10, 5]} intensity={0.7} />
+      )}
+      {!performanceMode && (
+        <pointLight position={[-5, 5, -5]} intensity={0.3} color="#FFE4B5" />
+      )}
       
       {soilLayers.map((layer, i) => (
         <SoilLayer
@@ -141,11 +154,16 @@ const SoilScene: React.FC<{ moisture: number; growthStage: number; controlsRef: 
       
       <RootSystem growthStage={growthStage} />
       
-      <Worm position={[0.5, 0.1, 0.5]} />
-      <Worm position={[-0.3, -0.3, -0.2]} />
+      {/* Worms - skip in performance mode */}
+      {!performanceMode && (
+        <>
+          <Worm position={[0.5, 0.1, 0.5]} />
+          <Worm position={[-0.3, -0.3, -0.2]} />
+        </>
+      )}
       
-      {/* Water droplets */}
-      {moisture > 50 && (
+      {/* Water droplets - skip in performance mode */}
+      {!performanceMode && moisture > 50 && (
         <group>
           {[...Array(5)].map((_, i) => (
             <mesh key={i} position={[Math.random() * 2 - 1, 0.5 + Math.random() * 0.3, Math.random() * 2 - 1]}>
@@ -184,9 +202,15 @@ const SoilVisualization3D: React.FC<SoilVisualization3DProps> = ({ moisture, gro
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-sky-200 to-amber-100"
     >
-      {({ enableZoom, controlsRef }) => (
+      {({ enableZoom, controlsRef, performanceMode }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
-          <SoilScene moisture={moisture} growthStage={growthStage} controlsRef={controlsRef} enableZoom={enableZoom} />
+          <SoilScene 
+            moisture={moisture} 
+            growthStage={growthStage} 
+            controlsRef={controlsRef} 
+            enableZoom={enableZoom}
+            performanceMode={performanceMode}
+          />
         </Canvas>
       )}
     </Fullscreen3DWrapper>

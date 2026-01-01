@@ -135,12 +135,24 @@ const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position }) => {
   );
 };
 
-const PlantScene: React.FC<{ plants: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[]; controlsRef: React.RefObject<any>; enableZoom: boolean }> = ({ plants, controlsRef, enableZoom }) => {
+const PlantScene: React.FC<{ 
+  plants: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[]; 
+  controlsRef: React.RefObject<any>; 
+  enableZoom: boolean;
+  performanceMode: boolean;
+}> = ({ plants, controlsRef, enableZoom, performanceMode }) => {
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
-      <pointLight position={[-3, 5, -3]} intensity={0.3} color="#FFD700" />
+      <ambientLight intensity={performanceMode ? 0.7 : 0.5} />
+      {!performanceMode && (
+        <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
+      )}
+      {performanceMode && (
+        <directionalLight position={[5, 10, 5]} intensity={0.7} />
+      )}
+      {!performanceMode && (
+        <pointLight position={[-3, 5, -3]} intensity={0.3} color="#FFD700" />
+      )}
       
       {/* Growing table */}
       <mesh position={[0, -0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -148,7 +160,8 @@ const PlantScene: React.FC<{ plants: { type: 'tomato' | 'lettuce' | 'pepper' | '
         <meshStandardMaterial color="#4A4A4A" roughness={0.8} />
       </mesh>
       
-      {plants.map((plant, i) => (
+      {/* Show fewer plants in performance mode */}
+      {(performanceMode ? plants.slice(0, 3) : plants).map((plant, i) => (
         <Plant
           key={i}
           plantType={plant.type}
@@ -157,18 +170,20 @@ const PlantScene: React.FC<{ plants: { type: 'tomato' | 'lettuce' | 'pepper' | '
         />
       ))}
       
-      {/* Grow lights */}
-      <group position={[0, 2, 0]}>
-        {[-1.5, 0, 1.5].map((x, i) => (
-          <group key={i} position={[x, 0, 0]}>
-            <mesh>
-              <boxGeometry args={[0.8, 0.1, 0.3]} />
-              <meshStandardMaterial color="#333" />
-            </mesh>
-            <pointLight position={[0, -0.2, 0]} intensity={0.5} color="#FF69B4" distance={3} />
-          </group>
-        ))}
-      </group>
+      {/* Grow lights - skip in performance mode */}
+      {!performanceMode && (
+        <group position={[0, 2, 0]}>
+          {[-1.5, 0, 1.5].map((x, i) => (
+            <group key={i} position={[x, 0, 0]}>
+              <mesh>
+                <boxGeometry args={[0.8, 0.1, 0.3]} />
+                <meshStandardMaterial color="#333" />
+              </mesh>
+              <pointLight position={[0, -0.2, 0]} intensity={0.5} color="#FF69B4" distance={3} />
+            </group>
+          ))}
+        </group>
+      )}
       
       <OrbitControls 
         ref={controlsRef}
@@ -206,9 +221,9 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-gray-800 to-gray-900"
     >
-      {({ enableZoom, controlsRef }) => (
+      {({ enableZoom, controlsRef, performanceMode }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
-          <PlantScene plants={plants} controlsRef={controlsRef} enableZoom={enableZoom} />
+          <PlantScene plants={plants} controlsRef={controlsRef} enableZoom={enableZoom} performanceMode={performanceMode} />
         </Canvas>
       )}
     </Fullscreen3DWrapper>
