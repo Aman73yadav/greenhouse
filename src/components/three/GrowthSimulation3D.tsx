@@ -225,8 +225,8 @@ const GrowthSimulation3D = ({
               ref={controlsRef}
               enablePan={false}
               enableZoom={enableZoom}
-              minDistance={5}
-              maxDistance={15}
+              minDistance={8}
+              maxDistance={16}
               maxPolarAngle={Math.PI / 2}
               target={DEFAULT_TARGET}
             />
