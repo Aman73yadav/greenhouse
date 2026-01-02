@@ -50,6 +50,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isZoomLocked, setIsZoomLocked] = useState(false);
+  const [zoomOutsideFullscreen, setZoomOutsideFullscreen] = useState(false);
   const [performanceMode, setPerformanceMode] = useState(false);
   const [cameraInfo, setCameraInfo] = useState({ distance: 0, azimuth: 0, polar: 0 });
   const prevFullscreenRef = useRef(false);
@@ -225,7 +226,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   }, [isFullscreen, presets, handleResetView]);
 
   // Determine if zoom should be enabled
-  const zoomEnabled = isFullscreen && !isZoomLocked;
+  const zoomEnabled = (isFullscreen || zoomOutsideFullscreen) && !isZoomLocked;
 
   return (
     <div 
@@ -265,12 +266,41 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
           <Focus className="w-4 h-4" />
         </button>
         
+        {/* Enable Zoom Outside Fullscreen Toggle (only show when not in fullscreen) */}
+        {!isFullscreen && (
+          <button
+            onClick={() => setZoomOutsideFullscreen(!zoomOutsideFullscreen)}
+            className={`p-2 rounded-lg backdrop-blur-sm border transition-colors ${
+              zoomOutsideFullscreen
+                ? 'bg-accent/20 border-accent/50 text-accent-foreground hover:bg-accent/30'
+                : 'bg-background/80 border-glass-border hover:bg-background'
+            }`}
+            title={zoomOutsideFullscreen ? 'Disable Scroll Zoom' : 'Enable Scroll Zoom'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-4 h-4"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </button>
+        )}
+
         {/* Zoom Lock Toggle */}
         <button
           onClick={toggleZoomLock}
           className={`p-2 rounded-lg backdrop-blur-sm border transition-colors ${
-            isZoomLocked 
-              ? 'bg-destructive/20 border-destructive/50 text-destructive hover:bg-destructive/30' 
+            isZoomLocked
+              ? 'bg-destructive/20 border-destructive/50 text-destructive hover:bg-destructive/30'
               : 'bg-background/80 border-glass-border hover:bg-background'
           }`}
           title={isZoomLocked ? 'Unlock Zoom' : 'Lock Zoom'}
