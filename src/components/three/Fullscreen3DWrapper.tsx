@@ -1,10 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { 
-  Maximize2, 
-  Minimize2, 
-  RotateCcw, 
-  Eye, 
-  Compass, 
+import {
+  Maximize2,
+  Minimize2,
+  RotateCcw,
+  Eye,
+  Compass,
   ArrowUp,
   Info,
   X,
@@ -12,7 +12,7 @@ import {
   Unlock,
   Focus,
   Zap,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 
 interface CameraPreset {
@@ -23,8 +23,8 @@ interface CameraPreset {
 }
 
 interface Fullscreen3DWrapperProps {
-  children: (props: { 
-    isFullscreen: boolean; 
+  children: (props: {
+    isFullscreen: boolean;
     enableZoom: boolean;
     controlsRef: React.RefObject<any>;
     onCameraChange?: () => void;
@@ -52,46 +52,47 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   const [isZoomLocked, setIsZoomLocked] = useState(false);
   const [performanceMode, setPerformanceMode] = useState(false);
   const [cameraInfo, setCameraInfo] = useState({ distance: 0, azimuth: 0, polar: 0 });
+  const prevFullscreenRef = useRef(false);
 
   const presets: CameraPreset[] = [
-    { 
-      name: 'Isometric', 
+    {
+      name: 'Isometric',
       icon: <Eye className="w-3 h-3" />,
       position: defaultCameraPosition,
-      target: defaultTarget
+      target: defaultTarget,
     },
-    { 
-      name: 'Top', 
+    {
+      name: 'Top',
       icon: <ArrowUp className="w-3 h-3" />,
       position: [0, Math.max(...defaultCameraPosition) * 1.5, 0.01],
-      target: defaultTarget
+      target: defaultTarget,
     },
-    { 
-      name: 'Front', 
+    {
+      name: 'Front',
       icon: <Compass className="w-3 h-3" />,
       position: [0, defaultCameraPosition[1] * 0.5, Math.max(...defaultCameraPosition) * 1.2],
-      target: defaultTarget
+      target: defaultTarget,
     },
-    { 
-      name: 'Side', 
+    {
+      name: 'Side',
       icon: <Compass className="w-3 h-3 rotate-90" />,
       position: [Math.max(...defaultCameraPosition) * 1.2, defaultCameraPosition[1] * 0.5, 0],
-      target: defaultTarget
+      target: defaultTarget,
     },
   ];
 
   const updateCameraInfo = useCallback(() => {
     if (controlsRef.current) {
       const controls = controlsRef.current;
-      const distance = controls.getDistance?.() || 
-        controls.object?.position?.distanceTo?.(controls.target) || 0;
+      const distance =
+        controls.getDistance?.() || controls.object?.position?.distanceTo?.(controls.target) || 0;
       const azimuth = controls.getAzimuthalAngle?.() || 0;
       const polar = controls.getPolarAngle?.() || 0;
-      
+
       setCameraInfo({
         distance: Math.round(distance * 10) / 10,
-        azimuth: Math.round((azimuth * 180 / Math.PI) % 360),
-        polar: Math.round(polar * 180 / Math.PI),
+        azimuth: Math.round((azimuth * 180) / Math.PI) % 360,
+        polar: Math.round((polar * 180) / Math.PI),
       });
     }
   }, []);
@@ -114,7 +115,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
 
   const toggleFullscreen = async () => {
     if (!containerRef.current) return;
-    
+
     try {
       if (!document.fullscreenElement) {
         await containerRef.current.requestFullscreen();
@@ -126,16 +127,26 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     }
   };
 
-  const handleResetView = () => {
+  const handleResetView = useCallback(() => {
     if (controlsRef.current) {
       controlsRef.current.object.position.set(...defaultCameraPosition);
       controlsRef.current.target.set(...defaultTarget);
       controlsRef.current.update();
       updateCameraInfo();
     }
-  };
+  }, [defaultCameraPosition, defaultTarget, updateCameraInfo]);
 
-  const handlePresetView = (preset: CameraPreset, index?: number) => {
+  // Prevent “stuck zoom” when leaving fullscreen (zoom is disabled outside fullscreen)
+  useEffect(() => {
+    const wasFullscreen = prevFullscreenRef.current;
+    prevFullscreenRef.current = isFullscreen;
+
+    if (wasFullscreen && !isFullscreen) {
+      handleResetView();
+    }
+  }, [isFullscreen, handleResetView]);
+
+  const handlePresetView = (preset: CameraPreset) => {
     if (controlsRef.current) {
       controlsRef.current.object.position.set(...preset.position);
       controlsRef.current.target.set(...preset.target);
@@ -145,24 +156,26 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   };
 
   const handleFitToScene = () => {
-    if (controlsRef.current) {
-      const camera = controlsRef.current.object;
-      const target = controlsRef.current.target;
-      
-      // Calculate optimal distance to fit the scene
-      const fov = camera.fov * (Math.PI / 180);
-      const fitDistance = sceneRadius / Math.sin(fov / 2);
-      
-      // Get current direction from target to camera
-      const direction = camera.position.clone().sub(target).normalize();
-      
-      // Set new position at fit distance along current direction
-      const newPosition = target.clone().add(direction.multiplyScalar(fitDistance * 0.8));
-      camera.position.copy(newPosition);
-      
-      controlsRef.current.update();
-      updateCameraInfo();
-    }
+    if (!controlsRef.current) return;
+
+    const controls = controlsRef.current;
+    const camera = controls.object;
+    const target = controls.target;
+
+    // Calculate distance needed to fit the scene in the current FOV
+    const fov = (camera.fov * Math.PI) / 180;
+    const rawFitDistance = sceneRadius / Math.sin(fov / 2);
+
+    // Clamp to OrbitControls min/max to avoid accidental “mega zoom”
+    const minD = typeof controls.minDistance === 'number' ? controls.minDistance : 0;
+    const maxD = typeof controls.maxDistance === 'number' ? controls.maxDistance : Infinity;
+    const fitDistance = Math.min(maxD, Math.max(minD, rawFitDistance * 0.9));
+
+    const direction = camera.position.clone().sub(target).normalize();
+    camera.position.copy(target.clone().add(direction.multiplyScalar(fitDistance)));
+
+    controls.update();
+    updateCameraInfo();
   };
 
   const toggleZoomLock = () => {
@@ -178,10 +191,10 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle shortcuts when in fullscreen
       if (!isFullscreen) return;
-      
+
       // Don't handle if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
+
       switch (e.key.toLowerCase()) {
         case 'f':
           toggleFullscreen();
@@ -190,16 +203,16 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
           handleResetView();
           break;
         case '1':
-          if (presets[0]) handlePresetView(presets[0], 0);
+          if (presets[0]) handlePresetView(presets[0]);
           break;
         case '2':
-          if (presets[1]) handlePresetView(presets[1], 1);
+          if (presets[1]) handlePresetView(presets[1]);
           break;
         case '3':
-          if (presets[2]) handlePresetView(presets[2], 2);
+          if (presets[2]) handlePresetView(presets[2]);
           break;
         case '4':
-          if (presets[3]) handlePresetView(presets[3], 3);
+          if (presets[3]) handlePresetView(presets[3]);
           break;
         case 'p':
           togglePerformanceMode();
@@ -209,7 +222,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen, presets]);
+  }, [isFullscreen, presets, handleResetView]);
 
   // Determine if zoom should be enabled
   const zoomEnabled = isFullscreen && !isZoomLocked;
@@ -301,7 +314,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
             {presets.map((preset, index) => (
               <button
                 key={preset.name}
-                onClick={() => handlePresetView(preset, index)}
+                onClick={() => handlePresetView(preset)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors text-sm"
                 title={`${preset.name} (${index + 1})`}
               >
