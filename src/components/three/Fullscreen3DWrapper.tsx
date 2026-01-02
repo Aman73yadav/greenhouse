@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import * as THREE from 'three';
 import {
   Maximize2,
   Minimize2,
@@ -27,6 +28,7 @@ interface Fullscreen3DWrapperProps {
     isFullscreen: boolean;
     enableZoom: boolean;
     controlsRef: React.RefObject<any>;
+    sceneRef: React.RefObject<THREE.Scene | null>;
     onCameraChange?: () => void;
     performanceMode: boolean;
   }) => React.ReactNode;
@@ -34,6 +36,7 @@ interface Fullscreen3DWrapperProps {
   defaultCameraPosition?: [number, number, number];
   defaultTarget?: [number, number, number];
   className?: string;
+  /** Fallback radius if scene bounds can't be computed */
   sceneRadius?: number;
 }
 
@@ -47,6 +50,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<any>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isZoomLocked, setIsZoomLocked] = useState(false);
@@ -137,7 +141,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     }
   }, [defaultCameraPosition, defaultTarget, updateCameraInfo]);
 
-  // Prevent “stuck zoom” when leaving fullscreen (zoom is disabled outside fullscreen)
+  // Prevent "stuck zoom" when leaving fullscreen (zoom is disabled outside fullscreen)
   useEffect(() => {
     const wasFullscreen = prevFullscreenRef.current;
     prevFullscreenRef.current = isFullscreen;
@@ -163,14 +167,34 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     const camera = controls.object;
     const target = controls.target;
 
+    let computedRadius = sceneRadius;
+
+    // Try to compute bounding sphere from actual scene objects
+    if (sceneRef.current) {
+      const box = new THREE.Box3();
+      sceneRef.current.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          box.expandByObject(obj);
+        }
+      });
+
+      if (!box.isEmpty()) {
+        const sphere = new THREE.Sphere();
+        box.getBoundingSphere(sphere);
+        computedRadius = sphere.radius;
+        // Update target to center of bounding sphere for better framing
+        target.copy(sphere.center);
+      }
+    }
+
     // Calculate distance needed to fit the scene in the current FOV
     const fov = (camera.fov * Math.PI) / 180;
-    const rawFitDistance = sceneRadius / Math.sin(fov / 2);
+    const rawFitDistance = computedRadius / Math.sin(fov / 2);
 
-    // Clamp to OrbitControls min/max to avoid accidental “mega zoom”
+    // Clamp to OrbitControls min/max to avoid accidental "mega zoom"
     const minD = typeof controls.minDistance === 'number' ? controls.minDistance : 0;
     const maxD = typeof controls.maxDistance === 'number' ? controls.maxDistance : Infinity;
-    const fitDistance = Math.min(maxD, Math.max(minD, rawFitDistance * 0.9));
+    const fitDistance = Math.min(maxD, Math.max(minD, rawFitDistance * 1.1));
 
     const direction = camera.position.clone().sub(target).normalize();
     camera.position.copy(target.clone().add(direction.multiplyScalar(fitDistance)));
@@ -238,6 +262,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         isFullscreen, 
         enableZoom: zoomEnabled,
         controlsRef,
+        sceneRef,
         onCameraChange: updateCameraInfo,
         performanceMode,
       })}

@@ -1,8 +1,19 @@
 import { Suspense, useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
+
+// Helper component to capture scene reference
+const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
+  const { scene } = useThree();
+  useEffect(() => {
+    if (sceneRef && 'current' in sceneRef) {
+      (sceneRef as React.MutableRefObject<THREE.Scene | null>).current = scene;
+    }
+  }, [scene, sceneRef]);
+  return null;
+};
 
 const GROWTH_STAGES = [
   { week: 1, name: 'Seed', description: 'Germination begins', heightPercentage: 5 },
@@ -217,9 +228,10 @@ const GrowthSimulation3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
         <>
           <Canvas shadows={!performanceMode}>
+            <SceneCapture sceneRef={sceneRef} />
             <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={40} />
             <OrbitControls 
               ref={controlsRef}

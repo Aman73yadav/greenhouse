@@ -1,8 +1,19 @@
-import React, { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
+
+// Helper component to capture scene reference
+const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
+  const { scene } = useThree();
+  useEffect(() => {
+    if (sceneRef && 'current' in sceneRef) {
+      (sceneRef as React.MutableRefObject<THREE.Scene | null>).current = scene;
+    }
+  }, [scene, sceneRef]);
+  return null;
+};
 
 interface PlantProps {
   growthStage: number;
@@ -221,8 +232,9 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-gray-800 to-gray-900"
     >
-      {({ enableZoom, controlsRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
+          <SceneCapture sceneRef={sceneRef} />
           <PlantScene plants={plants} controlsRef={controlsRef} enableZoom={enableZoom} performanceMode={performanceMode} />
         </Canvas>
       )}
