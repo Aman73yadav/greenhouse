@@ -1,8 +1,19 @@
-import { Suspense, useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Sky, Cloud, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
+
+// Helper component to capture scene reference
+const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
+  const { scene } = useThree();
+  useEffect(() => {
+    if (sceneRef && 'current' in sceneRef) {
+      (sceneRef as React.MutableRefObject<THREE.Scene | null>).current = scene;
+    }
+  }, [scene, sceneRef]);
+  return null;
+};
 
 interface FieldPlantProps {
   position: [number, number, number];
@@ -206,9 +217,10 @@ const VirtualField3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
         <>
           <Canvas shadows={!performanceMode}>
+            <SceneCapture sceneRef={sceneRef} />
             <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={45} />
             
             <ambientLight intensity={performanceMode ? 0.6 : 0.4} />
