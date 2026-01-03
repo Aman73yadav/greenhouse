@@ -130,7 +130,8 @@ const SoilScene: React.FC<{
   controlsRef: React.RefObject<any>; 
   enableZoom: boolean;
   performanceMode: boolean;
-}> = ({ moisture, growthStage, controlsRef, enableZoom, performanceMode }) => {
+  zoomSpeed: number;
+}> = ({ moisture, growthStage, controlsRef, enableZoom, performanceMode, zoomSpeed }) => {
   const soilLayers = [
     { y: 0.6, color: '#228B22', height: 0.2, label: 'Organic Matter' },
     { y: 0.3, color: '#3D2314', height: 0.4, label: 'Topsoil (A Horizon)' },
@@ -192,6 +193,7 @@ const SoilScene: React.FC<{
         enableRotate={true}
         minDistance={3}
         maxDistance={10}
+        zoomSpeed={zoomSpeed}
       />
     </>
   );
@@ -213,7 +215,7 @@ const SoilVisualization3D: React.FC<SoilVisualization3DProps> = ({ moisture, gro
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-sky-200 to-amber-100"
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
           <SceneCapture sceneRef={sceneRef} />
           <SoilScene
@@ -222,6 +224,7 @@ const SoilVisualization3D: React.FC<SoilVisualization3DProps> = ({ moisture, gro
             controlsRef={controlsRef} 
             enableZoom={enableZoom}
             performanceMode={performanceMode}
+            zoomSpeed={zoomSpeed}
           />
         </Canvas>
       )}

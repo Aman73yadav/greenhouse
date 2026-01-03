@@ -228,7 +228,7 @@ const GrowthSimulation3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
         <>
           <Canvas shadows={!performanceMode}>
             <SceneCapture sceneRef={sceneRef} />
@@ -241,6 +241,7 @@ const GrowthSimulation3D = ({
               maxDistance={16}
               maxPolarAngle={Math.PI / 2}
               target={DEFAULT_TARGET}
+              zoomSpeed={zoomSpeed}
             />
             
             <ambientLight intensity={performanceMode ? 0.7 : 0.5} />

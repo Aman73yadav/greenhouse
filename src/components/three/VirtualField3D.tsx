@@ -83,13 +83,15 @@ const Field = ({
   humidity, 
   controlsRef, 
   enableZoom,
-  performanceMode 
+  performanceMode,
+  zoomSpeed 
 }: { 
   temperature: number; 
   humidity: number; 
   controlsRef: React.RefObject<any>; 
   enableZoom: boolean;
   performanceMode: boolean;
+  zoomSpeed: number;
 }) => {
   const plants = useMemo(() => {
     const plantData: Array<{ pos: [number, number, number]; type: 'tomato' | 'corn' | 'lettuce' | 'carrot'; growth: number }> = [];
@@ -192,6 +194,7 @@ const Field = ({
         minDistance={5}
         maxDistance={30}
         maxPolarAngle={Math.PI / 2.1}
+        zoomSpeed={zoomSpeed}
       />
     </>
   );
@@ -217,7 +220,7 @@ const VirtualField3D = ({
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
         <>
           <Canvas shadows={!performanceMode}>
             <SceneCapture sceneRef={sceneRef} />
@@ -243,6 +246,7 @@ const VirtualField3D = ({
                 controlsRef={controlsRef} 
                 enableZoom={enableZoom}
                 performanceMode={performanceMode}
+                zoomSpeed={zoomSpeed}
               />
             </Suspense>
           </Canvas>
