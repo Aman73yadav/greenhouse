@@ -66,6 +66,10 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   const [cameraInfo, setCameraInfo] = useState({ distance: 0, azimuth: 0, polar: 0 });
   const prevFullscreenRef = useRef(false);
   const hasAutoFitRef = useRef(false);
+  const hasRestoredCameraRef = useRef(false);
+
+  // Storage key for persisting camera position
+  const storageKey = `greenhouse-camera-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
   const presets: CameraPreset[] = [
     {
@@ -94,6 +98,47 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     },
   ];
 
+  // Save camera position to localStorage
+  const saveCameraPosition = useCallback(() => {
+    if (controlsRef.current) {
+      const controls = controlsRef.current;
+      const pos = controls.object.position;
+      const tgt = controls.target;
+      const cameraState = {
+        position: [pos.x, pos.y, pos.z],
+        target: [tgt.x, tgt.y, tgt.z],
+      };
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(cameraState));
+      } catch (e) {
+        // localStorage might be full or disabled
+      }
+    }
+  }, [storageKey]);
+
+  // Restore camera position from localStorage
+  const restoreCameraPosition = useCallback(() => {
+    if (hasRestoredCameraRef.current || !controlsRef.current) return false;
+    
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const { position, target } = JSON.parse(saved);
+        if (position && target) {
+          controlsRef.current.object.position.set(position[0], position[1], position[2]);
+          controlsRef.current.target.set(target[0], target[1], target[2]);
+          controlsRef.current.update();
+          hasRestoredCameraRef.current = true;
+          hasAutoFitRef.current = true; // Skip auto-fit if we restored
+          return true;
+        }
+      }
+    } catch (e) {
+      // Invalid JSON or localStorage error
+    }
+    return false;
+  }, [storageKey]);
+
   const updateCameraInfo = useCallback(() => {
     if (controlsRef.current) {
       const controls = controlsRef.current;
@@ -107,8 +152,11 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         azimuth: Math.round((azimuth * 180) / Math.PI) % 360,
         polar: Math.round((polar * 180) / Math.PI),
       });
+      
+      // Save camera position on each update
+      saveCameraPosition();
     }
-  }, []);
+  }, [saveCameraPosition]);
 
   const handleFullscreenChange = useCallback(() => {
     setIsFullscreen(document.fullscreenElement === containerRef.current);
@@ -211,43 +259,50 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     updateCameraInfo();
   };
 
-  // Auto fit to scene on initial load
+  // Try to restore camera position on initial load, or auto-fit if no saved position
   useEffect(() => {
-    if (!autoFitOnLoad || hasAutoFitRef.current) return;
+    if (hasRestoredCameraRef.current || hasAutoFitRef.current) return;
     
-    // Wait for scene to be populated
-    const attemptAutoFit = () => {
-      if (sceneRef.current && controlsRef.current) {
-        const box = new THREE.Box3();
-        let hasMeshes = false;
-        sceneRef.current.traverse((obj) => {
-          if ((obj as THREE.Mesh).isMesh) {
-            hasMeshes = true;
-            box.expandByObject(obj);
-          }
-        });
-        
-        if (hasMeshes && !box.isEmpty()) {
-          hasAutoFitRef.current = true;
-          // Small delay to ensure controls are fully initialized
-          setTimeout(handleFitToScene, 100);
+    // Wait for controls to be ready
+    const attemptRestore = () => {
+      if (controlsRef.current) {
+        // Try to restore saved position first
+        if (restoreCameraPosition()) {
           return true;
+        }
+        
+        // If no saved position and autoFitOnLoad is enabled, do auto-fit
+        if (autoFitOnLoad && sceneRef.current) {
+          const box = new THREE.Box3();
+          let hasMeshes = false;
+          sceneRef.current.traverse((obj) => {
+            if ((obj as THREE.Mesh).isMesh) {
+              hasMeshes = true;
+              box.expandByObject(obj);
+            }
+          });
+          
+          if (hasMeshes && !box.isEmpty()) {
+            hasAutoFitRef.current = true;
+            setTimeout(handleFitToScene, 100);
+            return true;
+          }
         }
       }
       return false;
     };
 
     // Try immediately
-    if (attemptAutoFit()) return;
+    if (attemptRestore()) return;
 
     // Retry a few times with increasing delays
     const timeouts = [100, 300, 600, 1000];
     const timers = timeouts.map((delay) =>
-      setTimeout(() => attemptAutoFit(), delay)
+      setTimeout(() => attemptRestore(), delay)
     );
 
     return () => timers.forEach(clearTimeout);
-  }, [autoFitOnLoad, handleFitToScene]);
+  }, [autoFitOnLoad, handleFitToScene, restoreCameraPosition]);
 
   const toggleZoomLock = () => {
     setIsZoomLocked(!isZoomLocked);
