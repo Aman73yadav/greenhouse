@@ -273,7 +273,7 @@ interface Greenhouse3DProps {
   irrigationActive?: boolean;
 }
 
-const DEFAULT_CAMERA_POSITION: [number, number, number] = [12, 8, 12];
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [8, 6, 8];
 const DEFAULT_TARGET: [number, number, number] = [0, 1, 0];
 
 const Greenhouse3D = ({ 
@@ -285,8 +285,10 @@ const Greenhouse3D = ({
       title="3D Greenhouse"
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
+      autoFitOnLoad={true}
+      zoomSpeed={0.5}
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
         <Canvas shadows={!performanceMode}>
           <SceneCapture sceneRef={sceneRef} />
           <PerspectiveCamera makeDefault position={DEFAULT_CAMERA_POSITION} fov={45} />
@@ -295,10 +297,11 @@ const Greenhouse3D = ({
             enablePan={true}
             enableZoom={enableZoom}
             enableRotate={true}
-            minDistance={14}
-            maxDistance={28}
+            minDistance={6}
+            maxDistance={25}
             maxPolarAngle={Math.PI / 2.1}
             target={DEFAULT_TARGET}
+            zoomSpeed={zoomSpeed}
           />
           
           {/* Lighting - reduced in performance mode */}

@@ -31,6 +31,7 @@ interface Fullscreen3DWrapperProps {
     sceneRef: React.RefObject<THREE.Scene | null>;
     onCameraChange?: () => void;
     performanceMode: boolean;
+    zoomSpeed: number;
   }) => React.ReactNode;
   title?: string;
   defaultCameraPosition?: [number, number, number];
@@ -38,6 +39,10 @@ interface Fullscreen3DWrapperProps {
   className?: string;
   /** Fallback radius if scene bounds can't be computed */
   sceneRadius?: number;
+  /** Auto fit to scene on initial load */
+  autoFitOnLoad?: boolean;
+  /** Zoom speed multiplier (default 0.5 for smoother zooming) */
+  zoomSpeed?: number;
 }
 
 const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
@@ -47,6 +52,8 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   defaultTarget = [0, 0, 0],
   className = '',
   sceneRadius = 5,
+  autoFitOnLoad = true,
+  zoomSpeed = 0.5,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<any>(null);
@@ -58,6 +65,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   const [performanceMode, setPerformanceMode] = useState(false);
   const [cameraInfo, setCameraInfo] = useState({ distance: 0, azimuth: 0, polar: 0 });
   const prevFullscreenRef = useRef(false);
+  const hasAutoFitRef = useRef(false);
 
   const presets: CameraPreset[] = [
     {
@@ -203,6 +211,44 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     updateCameraInfo();
   };
 
+  // Auto fit to scene on initial load
+  useEffect(() => {
+    if (!autoFitOnLoad || hasAutoFitRef.current) return;
+    
+    // Wait for scene to be populated
+    const attemptAutoFit = () => {
+      if (sceneRef.current && controlsRef.current) {
+        const box = new THREE.Box3();
+        let hasMeshes = false;
+        sceneRef.current.traverse((obj) => {
+          if ((obj as THREE.Mesh).isMesh) {
+            hasMeshes = true;
+            box.expandByObject(obj);
+          }
+        });
+        
+        if (hasMeshes && !box.isEmpty()) {
+          hasAutoFitRef.current = true;
+          // Small delay to ensure controls are fully initialized
+          setTimeout(handleFitToScene, 100);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (attemptAutoFit()) return;
+
+    // Retry a few times with increasing delays
+    const timeouts = [100, 300, 600, 1000];
+    const timers = timeouts.map((delay) =>
+      setTimeout(() => attemptAutoFit(), delay)
+    );
+
+    return () => timers.forEach(clearTimeout);
+  }, [autoFitOnLoad, handleFitToScene]);
+
   const toggleZoomLock = () => {
     setIsZoomLocked(!isZoomLocked);
   };
@@ -265,6 +311,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         sceneRef,
         onCameraChange: updateCameraInfo,
         performanceMode,
+        zoomSpeed,
       })}
       
       {/* Controls Overlay */}

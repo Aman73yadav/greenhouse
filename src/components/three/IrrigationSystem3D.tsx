@@ -168,7 +168,8 @@ const IrrigationScene: React.FC<{
   controlsRef: React.RefObject<any>; 
   enableZoom: boolean;
   performanceMode: boolean;
-}> = ({ irrigationActive, mistingActive, controlsRef, enableZoom, performanceMode }) => {
+  zoomSpeed: number;
+}> = ({ irrigationActive, mistingActive, controlsRef, enableZoom, performanceMode, zoomSpeed }) => {
   return (
     <>
       <ambientLight intensity={performanceMode ? 0.6 : 0.4} />
@@ -245,6 +246,7 @@ const IrrigationScene: React.FC<{
         enableRotate={true}
         minDistance={4}
         maxDistance={15}
+        zoomSpeed={zoomSpeed}
       />
     </>
   );
@@ -269,7 +271,7 @@ const IrrigationSystem3D: React.FC<IrrigationSystem3DProps> = ({
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-sky-300 to-sky-100"
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
           <SceneCapture sceneRef={sceneRef} />
           <IrrigationScene
@@ -278,6 +280,7 @@ const IrrigationSystem3D: React.FC<IrrigationSystem3DProps> = ({
             controlsRef={controlsRef} 
             enableZoom={enableZoom}
             performanceMode={performanceMode}
+            zoomSpeed={zoomSpeed}
           />
         </Canvas>
       )}

@@ -151,7 +151,8 @@ const PlantScene: React.FC<{
   controlsRef: React.RefObject<any>; 
   enableZoom: boolean;
   performanceMode: boolean;
-}> = ({ plants, controlsRef, enableZoom, performanceMode }) => {
+  zoomSpeed: number;
+}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed }) => {
   return (
     <>
       <ambientLight intensity={performanceMode ? 0.7 : 0.5} />
@@ -203,6 +204,7 @@ const PlantScene: React.FC<{
         enableRotate={true}
         minDistance={3}
         maxDistance={12}
+        zoomSpeed={zoomSpeed}
       />
     </>
   );
@@ -232,10 +234,10 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-gray-800 to-gray-900"
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode }) => (
+      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
         <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
           <SceneCapture sceneRef={sceneRef} />
-          <PlantScene plants={plants} controlsRef={controlsRef} enableZoom={enableZoom} performanceMode={performanceMode} />
+          <PlantScene plants={plants} controlsRef={controlsRef} enableZoom={enableZoom} performanceMode={performanceMode} zoomSpeed={zoomSpeed} />
         </Canvas>
       )}
     </Fullscreen3DWrapper>
