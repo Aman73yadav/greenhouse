@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Float, Environment, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 
@@ -19,130 +19,302 @@ interface PlantProps {
   growthStage: number;
   plantType: 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
   position: [number, number, number];
+  performanceMode: boolean;
 }
 
-const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position }) => {
+// Enhanced plant component with better visuals
+const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode }) => {
   const plantRef = useRef<THREE.Group>(null);
   const leavesRef = useRef<THREE.Group>(null);
   
-  const stemHeight = useMemo(() => 0.1 + (growthStage / 100) * 1.5, [growthStage]);
-  const leafScale = useMemo(() => 0.2 + (growthStage / 100) * 0.8, [growthStage]);
+  const stemHeight = useMemo(() => 0.1 + (growthStage / 100) * 2, [growthStage]);
+  const leafScale = useMemo(() => 0.3 + (growthStage / 100) * 1, [growthStage]);
   
   useFrame((state) => {
-    if (leavesRef.current) {
+    if (leavesRef.current && !performanceMode) {
       leavesRef.current.children.forEach((leaf, i) => {
-        leaf.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + i) * 0.05;
+        leaf.rotation.z = Math.sin(state.clock.elapsedTime * 0.3 + i * 0.5) * 0.08;
+        leaf.rotation.x = Math.sin(state.clock.elapsedTime * 0.2 + i * 0.3) * 0.03;
       });
+    }
+    // Subtle plant sway
+    if (plantRef.current && !performanceMode) {
+      plantRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.02;
     }
   });
 
-  const getPlantColor = () => {
-    switch (plantType) {
-      case 'tomato': return '#228B22';
-      case 'lettuce': return '#90EE90';
-      case 'pepper': return '#2E8B57';
-      case 'cucumber': return '#32CD32';
-      default: return '#228B22';
-    }
+  const plantColors = {
+    tomato: { stem: '#2D5016', leaf: '#3D8B3D', fruit: growthStage > 70 ? '#E53935' : '#8BC34A' },
+    lettuce: { stem: '#4CAF50', leaf: '#81C784', fruit: '#81C784' },
+    pepper: { stem: '#2E7D32', leaf: '#4CAF50', fruit: growthStage > 70 ? '#FF5722' : '#66BB6A' },
+    cucumber: { stem: '#388E3C', leaf: '#66BB6A', fruit: '#558B2F' },
   };
 
-  const getFruitColor = () => {
-    switch (plantType) {
-      case 'tomato': return growthStage > 70 ? '#FF6347' : '#90EE90';
-      case 'pepper': return growthStage > 70 ? '#FF4500' : '#228B22';
-      case 'cucumber': return '#228B22';
-      default: return '#228B22';
-    }
-  };
-
-  const numLeaves = Math.min(8, Math.floor(growthStage / 10) + 2);
+  const colors = plantColors[plantType];
+  const numLeaves = Math.min(12, Math.floor(growthStage / 8) + 3);
+  const showFruits = growthStage > 50 && (plantType === 'tomato' || plantType === 'pepper' || plantType === 'cucumber');
+  const numFruits = showFruits ? Math.floor((growthStage - 50) / 12) : 0;
 
   return (
     <group ref={plantRef} position={position}>
-      {/* Pot */}
-      <mesh position={[0, -0.15, 0]}>
-        <cylinderGeometry args={[0.25, 0.2, 0.3, 16]} />
-        <meshStandardMaterial color="#8B4513" roughness={0.8} />
+      {/* Premium terracotta pot */}
+      <group position={[0, -0.2, 0]}>
+        {/* Pot body */}
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.35, 0.28, 0.4, 20]} />
+          <meshStandardMaterial 
+            color="#B7522A" 
+            roughness={0.7} 
+            metalness={0.1}
+          />
+        </mesh>
+        {/* Pot rim */}
+        <mesh position={[0, 0.2, 0]}>
+          <torusGeometry args={[0.35, 0.04, 8, 20]} />
+          <meshStandardMaterial color="#A0431D" roughness={0.6} />
+        </mesh>
+        {/* Inner rim detail */}
+        <mesh position={[0, 0.18, 0]}>
+          <cylinderGeometry args={[0.32, 0.32, 0.04, 20]} />
+          <meshStandardMaterial color="#8B3A18" roughness={0.8} />
+        </mesh>
+      </group>
+      
+      {/* Rich soil with mulch texture */}
+      <mesh position={[0, 0.02, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.08, 20]} />
+        <meshStandardMaterial color="#3E2723" roughness={0.95} />
       </mesh>
       
-      {/* Soil in pot */}
-      <mesh position={[0, 0, 0]}>
-        <cylinderGeometry args={[0.22, 0.22, 0.05, 16]} />
-        <meshStandardMaterial color="#3D2314" roughness={0.9} />
-      </mesh>
-      
-      {/* Stem */}
-      <mesh position={[0, stemHeight / 2, 0]}>
-        <cylinderGeometry args={[0.02, 0.03, stemHeight, 8]} />
-        <meshStandardMaterial color="#228B22" roughness={0.6} />
-      </mesh>
-      
-      {/* Leaves */}
-      <group ref={leavesRef} position={[0, stemHeight * 0.3, 0]}>
-        {[...Array(numLeaves)].map((_, i) => {
-          const angle = (i / numLeaves) * Math.PI * 2;
-          const height = (i / numLeaves) * stemHeight * 0.6;
+      {/* Main stem with segments */}
+      <group>
+        {[...Array(Math.max(3, Math.floor(stemHeight / 0.3)))].map((_, i) => {
+          const segmentHeight = stemHeight / Math.max(3, Math.floor(stemHeight / 0.3));
+          const thickness = 0.035 - (i * 0.003);
           return (
-            <group key={i} position={[0, height, 0]} rotation={[0, angle, Math.PI / 6]}>
-              <mesh position={[0.15 * leafScale, 0, 0]} rotation={[0, 0, -0.3]}>
-                <sphereGeometry args={[0.1 * leafScale, 8, 4]} />
-                <meshStandardMaterial 
-                  color={getPlantColor()} 
-                  roughness={0.6}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-            </group>
+            <mesh key={i} position={[0, i * segmentHeight + segmentHeight / 2, 0]}>
+              <cylinderGeometry args={[thickness * 0.8, thickness, segmentHeight, 8]} />
+              <meshStandardMaterial color={colors.stem} roughness={0.7} />
+            </mesh>
           );
         })}
       </group>
       
-      {/* Fruits (if mature enough) */}
-      {growthStage > 50 && (plantType === 'tomato' || plantType === 'pepper') && (
-        <group position={[0, stemHeight * 0.7, 0]}>
-          {[...Array(Math.floor((growthStage - 50) / 15))].map((_, i) => {
-            const angle = (i / 3) * Math.PI * 2 + Math.random();
-            return (
-              <mesh 
-                key={i} 
-                position={[
-                  Math.cos(angle) * 0.15,
-                  -0.1 - i * 0.08,
-                  Math.sin(angle) * 0.15
-                ]}
+      {/* Enhanced leaves */}
+      <group ref={leavesRef} position={[0, 0.1, 0]}>
+        {[...Array(numLeaves)].map((_, i) => {
+          const angle = (i / numLeaves) * Math.PI * 2 + (i % 2) * 0.3;
+          const height = (i / numLeaves) * stemHeight * 0.85 + 0.15;
+          const sizeVariation = 0.8 + Math.random() * 0.4;
+          const droop = Math.min(0.5, i * 0.03);
+          
+          return (
+            <Float 
+              key={i} 
+              speed={performanceMode ? 0 : 1.5} 
+              rotationIntensity={performanceMode ? 0 : 0.1} 
+              floatIntensity={performanceMode ? 0 : 0.1}
+            >
+              <group 
+                position={[0, height, 0]} 
+                rotation={[droop, angle, Math.PI / 5 + droop]}
               >
-                <sphereGeometry args={[0.05 + (growthStage - 50) * 0.001, 8, 8]} />
-                <meshStandardMaterial color={getFruitColor()} roughness={0.4} />
-              </mesh>
+                {/* Leaf blade */}
+                <mesh position={[0.18 * leafScale * sizeVariation, 0, 0]} rotation={[0, 0, -0.2]}>
+                  <sphereGeometry args={[0.12 * leafScale * sizeVariation, 6, 4]} />
+                  <meshStandardMaterial 
+                    color={colors.leaf}
+                    roughness={0.5}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+                {/* Leaf vein */}
+                <mesh position={[0.1 * leafScale * sizeVariation, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+                  <cylinderGeometry args={[0.008, 0.003, 0.15 * leafScale * sizeVariation, 4]} />
+                  <meshStandardMaterial color={colors.stem} roughness={0.6} />
+                </mesh>
+              </group>
+            </Float>
+          );
+        })}
+      </group>
+      
+      {/* Fruits with stems */}
+      {showFruits && (
+        <group position={[0, stemHeight * 0.6, 0]}>
+          {[...Array(numFruits)].map((_, i) => {
+            const angle = (i / Math.max(numFruits, 1)) * Math.PI * 2 + 0.5;
+            const fruitSize = 0.06 + ((growthStage - 50) / 50) * 0.04;
+            return (
+              <group key={i} position={[
+                Math.cos(angle) * 0.2,
+                -0.05 - i * 0.12,
+                Math.sin(angle) * 0.2
+              ]}>
+                {/* Fruit stem */}
+                <mesh rotation={[0.3 * Math.cos(angle), 0, 0.3 * Math.sin(angle)]}>
+                  <cylinderGeometry args={[0.008, 0.005, 0.08, 6]} />
+                  <meshStandardMaterial color="#4A7023" roughness={0.6} />
+                </mesh>
+                {/* Fruit */}
+                <Float speed={performanceMode ? 0 : 2} floatIntensity={performanceMode ? 0 : 0.05}>
+                  <mesh position={[0, -0.05, 0]}>
+                    <sphereGeometry args={[fruitSize, performanceMode ? 8 : 12, performanceMode ? 8 : 12]} />
+                    <meshStandardMaterial 
+                      color={colors.fruit} 
+                      roughness={0.3} 
+                      metalness={0.1}
+                    />
+                  </mesh>
+                </Float>
+                {/* Fruit calyx (little green star on top) */}
+                {plantType === 'tomato' && (
+                  <mesh position={[0, -0.02, 0]} rotation={[Math.PI, 0, 0]}>
+                    <coneGeometry args={[0.02, 0.015, 5]} />
+                    <meshStandardMaterial color="#4A7023" roughness={0.6} />
+                  </mesh>
+                )}
+              </group>
             );
           })}
         </group>
       )}
       
-      {/* Lettuce leaves */}
+      {/* Lettuce head */}
       {plantType === 'lettuce' && growthStage > 20 && (
-        <group position={[0, 0.1, 0]}>
-          {[...Array(Math.floor(growthStage / 8))].map((_, i) => {
-            const angle = (i / 12) * Math.PI * 2;
-            const tilt = 0.2 + (i * 0.05);
+        <group position={[0, 0.08, 0]}>
+          {[...Array(Math.min(15, Math.floor(growthStage / 5)))].map((_, i) => {
+            const angle = (i / 15) * Math.PI * 2 + i * 0.5;
+            const tilt = 0.1 + (i * 0.06);
+            const layerSize = 0.12 + (i * 0.01);
             return (
-              <mesh 
+              <Float 
                 key={i} 
-                position={[Math.cos(angle) * 0.1, i * 0.02, Math.sin(angle) * 0.1]}
-                rotation={[tilt, angle, 0]}
+                speed={performanceMode ? 0 : 1} 
+                rotationIntensity={performanceMode ? 0 : 0.05}
+                floatIntensity={performanceMode ? 0 : 0.02}
               >
-                <planeGeometry args={[0.15, 0.2]} />
-                <meshStandardMaterial 
-                  color="#90EE90" 
-                  roughness={0.7}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
+                <mesh 
+                  position={[Math.cos(angle) * 0.08 * (i / 10), i * 0.025, Math.sin(angle) * 0.08 * (i / 10)]}
+                  rotation={[tilt, angle, 0]}
+                >
+                  <planeGeometry args={[layerSize, layerSize * 1.3]} />
+                  <meshStandardMaterial 
+                    color={i % 3 === 0 ? '#81C784' : '#A5D6A7'}
+                    roughness={0.6}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+              </Float>
             );
           })}
         </group>
       )}
+      
+      {/* Growth indicator glow */}
+      {!performanceMode && growthStage > 60 && (
+        <pointLight 
+          position={[0, stemHeight * 0.5, 0]} 
+          intensity={0.3} 
+          color="#81C784" 
+          distance={1.5} 
+        />
+      )}
     </group>
+  );
+};
+
+// Grow lights with realistic glow
+const GrowLights: React.FC<{ performanceMode: boolean }> = ({ performanceMode }) => {
+  const lightsRef = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (lightsRef.current && !performanceMode) {
+      lightsRef.current.children.forEach((light, i) => {
+        const intensity = 0.5 + Math.sin(state.clock.elapsedTime * 2 + i) * 0.1;
+        const pointLight = light.children.find(c => c.type === 'PointLight') as THREE.PointLight;
+        if (pointLight) pointLight.intensity = intensity;
+      });
+    }
+  });
+
+  return (
+    <group ref={lightsRef} position={[0, 2.5, 0]}>
+      {[-2, 0, 2].map((x, i) => (
+        <group key={i} position={[x, 0, 0]}>
+          {/* Light housing */}
+          <mesh>
+            <boxGeometry args={[1.2, 0.12, 0.4]} />
+            <meshStandardMaterial color="#2C2C2C" metalness={0.8} roughness={0.2} />
+          </mesh>
+          {/* Light panel */}
+          <mesh position={[0, -0.07, 0]}>
+            <boxGeometry args={[1, 0.02, 0.3]} />
+            <meshStandardMaterial 
+              color="#FF69B4" 
+              emissive="#FF1493" 
+              emissiveIntensity={performanceMode ? 0.5 : 1}
+            />
+          </mesh>
+          {/* Light glow */}
+          {!performanceMode && (
+            <pointLight 
+              position={[0, -0.3, 0]} 
+              intensity={0.6} 
+              color="#FF69B4" 
+              distance={4}
+            />
+          )}
+        </group>
+      ))}
+      {/* Support bar */}
+      <mesh position={[0, 0.1, 0]}>
+        <boxGeometry args={[6, 0.05, 0.05]} />
+        <meshStandardMaterial color="#404040" metalness={0.9} roughness={0.1} />
+      </mesh>
+    </group>
+  );
+};
+
+// Growing table/bench
+const GrowingTable: React.FC = () => {
+  return (
+    <group position={[0, -0.5, 0]}>
+      {/* Table top */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[7, 0.1, 5]} />
+        <meshStandardMaterial color="#37474F" metalness={0.3} roughness={0.7} />
+      </mesh>
+      {/* Table legs */}
+      {[[-3, -1.8], [-3, 1.8], [3, -1.8], [3, 1.8]].map(([x, z], i) => (
+        <mesh key={i} position={[x, -0.6, z]}>
+          <boxGeometry args={[0.15, 1.1, 0.15]} />
+          <meshStandardMaterial color="#263238" metalness={0.5} roughness={0.5} />
+        </mesh>
+      ))}
+      {/* Drainage mat */}
+      <mesh position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[6.5, 4.5]} />
+        <meshStandardMaterial color="#1B5E20" roughness={0.9} opacity={0.8} transparent />
+      </mesh>
+    </group>
+  );
+};
+
+// Water droplets particle effect
+const WaterMist: React.FC<{ performanceMode: boolean }> = ({ performanceMode }) => {
+  if (performanceMode) return null;
+  
+  return (
+    <Sparkles
+      count={50}
+      scale={[6, 2, 4]}
+      position={[0, 1, 0]}
+      size={1.5}
+      speed={0.3}
+      opacity={0.4}
+      color="#4FC3F7"
+    />
   );
 };
 
@@ -155,46 +327,60 @@ const PlantScene: React.FC<{
 }> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed }) => {
   return (
     <>
-      <ambientLight intensity={performanceMode ? 0.7 : 0.5} />
+      {/* Lighting */}
+      <ambientLight intensity={performanceMode ? 0.5 : 0.35} />
+      <directionalLight 
+        position={[8, 12, 8]} 
+        intensity={performanceMode ? 0.6 : 0.8} 
+        castShadow={!performanceMode}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
       {!performanceMode && (
-        <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
+        <>
+          <pointLight position={[-5, 6, -5]} intensity={0.25} color="#FFE4B5" />
+          <pointLight position={[5, 3, 5]} intensity={0.15} color="#87CEEB" />
+        </>
       )}
-      {performanceMode && (
-        <directionalLight position={[5, 10, 5]} intensity={0.7} />
-      )}
-      {!performanceMode && (
-        <pointLight position={[-3, 5, -3]} intensity={0.3} color="#FFD700" />
-      )}
+      
+      {/* Environment */}
+      {!performanceMode && <Environment preset="warehouse" backgroundBlurriness={1} />}
       
       {/* Growing table */}
-      <mesh position={[0, -0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[6, 4]} />
-        <meshStandardMaterial color="#4A4A4A" roughness={0.8} />
-      </mesh>
+      <GrowingTable />
       
-      {/* Show fewer plants in performance mode */}
-      {(performanceMode ? plants.slice(0, 3) : plants).map((plant, i) => (
-        <Plant
-          key={i}
-          plantType={plant.type}
-          growthStage={plant.growthStage}
-          position={[(i % 3 - 1) * 1.5, 0, Math.floor(i / 3) * 1.2 - 0.5]}
-        />
-      ))}
+      {/* Grow lights */}
+      <GrowLights performanceMode={performanceMode} />
       
-      {/* Grow lights - skip in performance mode */}
+      {/* Water mist effect */}
+      <WaterMist performanceMode={performanceMode} />
+      
+      {/* Plants - arranged in a nice grid */}
+      {(performanceMode ? plants.slice(0, 4) : plants).map((plant, i) => {
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+        return (
+          <Plant
+            key={i}
+            plantType={plant.type}
+            growthStage={plant.growthStage}
+            position={[(col - 1) * 2, 0, (row - 0.5) * 1.8]}
+            performanceMode={performanceMode}
+          />
+        );
+      })}
+      
+      {/* Ambient particles */}
       {!performanceMode && (
-        <group position={[0, 2, 0]}>
-          {[-1.5, 0, 1.5].map((x, i) => (
-            <group key={i} position={[x, 0, 0]}>
-              <mesh>
-                <boxGeometry args={[0.8, 0.1, 0.3]} />
-                <meshStandardMaterial color="#333" />
-              </mesh>
-              <pointLight position={[0, -0.2, 0]} intensity={0.5} color="#FF69B4" distance={3} />
-            </group>
-          ))}
-        </group>
+        <Sparkles
+          count={30}
+          scale={[8, 4, 6]}
+          position={[0, 1.5, 0]}
+          size={0.8}
+          speed={0.2}
+          opacity={0.3}
+          color="#FFFACD"
+        />
       )}
       
       <OrbitControls 
@@ -203,8 +389,9 @@ const PlantScene: React.FC<{
         enableZoom={enableZoom}
         enableRotate={true}
         minDistance={3}
-        maxDistance={12}
+        maxDistance={15}
         zoomSpeed={zoomSpeed}
+        maxPolarAngle={Math.PI / 2 + 0.2}
       />
     </>
   );
@@ -214,30 +401,42 @@ interface PlantGrowth3DProps {
   plants?: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[];
 }
 
-const DEFAULT_CAMERA_POSITION: [number, number, number] = [4, 3, 4];
-const DEFAULT_TARGET: [number, number, number] = [0, 0, 0];
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [5, 4, 5];
+const DEFAULT_TARGET: [number, number, number] = [0, 0.5, 0];
 
 const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({ 
   plants = [
-    { type: 'tomato', growthStage: 75 },
-    { type: 'lettuce', growthStage: 60 },
-    { type: 'pepper', growthStage: 85 },
-    { type: 'cucumber', growthStage: 45 },
-    { type: 'tomato', growthStage: 30 },
-    { type: 'lettuce', growthStage: 90 },
+    { type: 'tomato', growthStage: 85 },
+    { type: 'lettuce', growthStage: 70 },
+    { type: 'pepper', growthStage: 90 },
+    { type: 'cucumber', growthStage: 55 },
+    { type: 'tomato', growthStage: 40 },
+    { type: 'lettuce', growthStage: 95 },
   ] 
 }) => {
   return (
     <Fullscreen3DWrapper
-      title="Plant Growth Process"
+      title="Plant Growth Simulation"
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
-      className="bg-gradient-to-b from-gray-800 to-gray-900"
+      className="bg-gradient-to-b from-slate-900 via-slate-800 to-emerald-950"
     >
       {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
-        <Canvas camera={{ position: DEFAULT_CAMERA_POSITION, fov: 50 }}>
+        <Canvas 
+          camera={{ position: DEFAULT_CAMERA_POSITION, fov: 45 }}
+          shadows={!performanceMode}
+          dpr={performanceMode ? 1 : [1, 2]}
+        >
           <SceneCapture sceneRef={sceneRef} />
-          <PlantScene plants={plants} controlsRef={controlsRef} enableZoom={enableZoom} performanceMode={performanceMode} zoomSpeed={zoomSpeed} />
+          <color attach="background" args={['#0F1A0F']} />
+          <fog attach="fog" args={['#0F1A0F', 8, 25]} />
+          <PlantScene 
+            plants={plants} 
+            controlsRef={controlsRef} 
+            enableZoom={enableZoom} 
+            performanceMode={performanceMode} 
+            zoomSpeed={zoomSpeed} 
+          />
         </Canvas>
       )}
     </Fullscreen3DWrapper>
