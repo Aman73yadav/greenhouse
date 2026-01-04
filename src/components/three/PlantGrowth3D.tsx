@@ -1,8 +1,9 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Float, Environment, Sparkles } from '@react-three/drei';
+import { OrbitControls, Float, Environment, Sparkles, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
+import { Slider } from '@/components/ui/slider';
 
 // Helper component to capture scene reference
 const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
@@ -15,15 +16,50 @@ const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | nu
   return null;
 };
 
+// Floating label component
+interface PlantLabelProps {
+  plantType: string;
+  growthStage: number;
+  position: [number, number, number];
+}
+
+const PlantLabel: React.FC<PlantLabelProps> = ({ plantType, growthStage, position }) => {
+  const labelY = 0.2 + (growthStage / 100) * 2.2;
+  
+  return (
+    <Html
+      position={[position[0], labelY, position[2]]}
+      center
+      distanceFactor={8}
+      occlude={false}
+      style={{ pointerEvents: 'none' }}
+    >
+      <div className="bg-background/90 backdrop-blur-sm border border-border/50 rounded-lg px-3 py-1.5 shadow-lg text-center whitespace-nowrap">
+        <div className="text-sm font-semibold capitalize text-foreground">{plantType}</div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1 justify-center">
+          <div 
+            className="w-2 h-2 rounded-full" 
+            style={{ 
+              backgroundColor: growthStage < 30 ? '#EF4444' : growthStage < 60 ? '#F59E0B' : '#22C55E' 
+            }} 
+          />
+          {growthStage}% grown
+        </div>
+      </div>
+    </Html>
+  );
+};
+
 interface PlantProps {
   growthStage: number;
   plantType: 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
   position: [number, number, number];
   performanceMode: boolean;
+  showLabel?: boolean;
 }
 
 // Enhanced plant component with better visuals
-const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode }) => {
+const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode, showLabel = true }) => {
   const plantRef = useRef<THREE.Group>(null);
   const leavesRef = useRef<THREE.Group>(null);
   
@@ -57,6 +93,9 @@ const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, perform
 
   return (
     <group ref={plantRef} position={position}>
+      {/* Floating label */}
+      {showLabel && <PlantLabel plantType={plantType} growthStage={growthStage} position={[0, 0, 0]} />}
+      
       {/* Premium terracotta pot */}
       <group position={[0, -0.2, 0]}>
         {/* Pot body */}
@@ -324,7 +363,8 @@ const PlantScene: React.FC<{
   enableZoom: boolean;
   performanceMode: boolean;
   zoomSpeed: number;
-}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed }) => {
+  globalGrowthModifier: number;
+}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier }) => {
   return (
     <>
       {/* Lighting */}
@@ -359,13 +399,16 @@ const PlantScene: React.FC<{
       {(performanceMode ? plants.slice(0, 4) : plants).map((plant, i) => {
         const row = Math.floor(i / 3);
         const col = i % 3;
+        // Apply global growth modifier to each plant's growth stage
+        const modifiedGrowth = Math.min(100, Math.max(0, plant.growthStage * (globalGrowthModifier / 100)));
         return (
           <Plant
             key={i}
             plantType={plant.type}
-            growthStage={plant.growthStage}
+            growthStage={modifiedGrowth}
             position={[(col - 1) * 2, 0, (row - 0.5) * 1.8]}
             performanceMode={performanceMode}
+            showLabel={!performanceMode}
           />
         );
       })}
@@ -397,6 +440,34 @@ const PlantScene: React.FC<{
   );
 };
 
+// Growth slider control component
+const GrowthSliderControl: React.FC<{
+  value: number;
+  onChange: (value: number) => void;
+}> = ({ value, onChange }) => {
+  return (
+    <div className="w-64">
+      <div className="text-xs text-muted-foreground mb-2 flex justify-between">
+        <span>Growth Stage</span>
+        <span className="font-mono">{value}%</span>
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={(values) => onChange(values[0])}
+        min={10}
+        max={100}
+        step={5}
+        className="w-full"
+      />
+      <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+        <span>Seedling</span>
+        <span>Mature</span>
+        <span>Harvest</span>
+      </div>
+    </div>
+  );
+};
+
 interface PlantGrowth3DProps {
   plants?: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[];
 }
@@ -414,18 +485,27 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
     { type: 'lettuce', growthStage: 95 },
   ] 
 }) => {
+  const [globalGrowthModifier, setGlobalGrowthModifier] = useState(100);
+
   return (
     <Fullscreen3DWrapper
       title="Plant Growth Simulation"
       defaultCameraPosition={DEFAULT_CAMERA_POSITION}
       defaultTarget={DEFAULT_TARGET}
       className="bg-gradient-to-b from-slate-900 via-slate-800 to-emerald-950"
+      customControls={
+        <GrowthSliderControl
+          value={globalGrowthModifier}
+          onChange={setGlobalGrowthModifier}
+        />
+      }
     >
-      {({ enableZoom, controlsRef, sceneRef, performanceMode, zoomSpeed }) => (
+      {({ enableZoom, controlsRef, sceneRef, canvasRef, performanceMode, zoomSpeed }) => (
         <Canvas 
           camera={{ position: DEFAULT_CAMERA_POSITION, fov: 45 }}
           shadows={!performanceMode}
           dpr={performanceMode ? 1 : [1, 2]}
+          gl={{ preserveDrawingBuffer: true }}
         >
           <SceneCapture sceneRef={sceneRef} />
           <color attach="background" args={['#0F1A0F']} />
@@ -435,7 +515,8 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
             controlsRef={controlsRef} 
             enableZoom={enableZoom} 
             performanceMode={performanceMode} 
-            zoomSpeed={zoomSpeed} 
+            zoomSpeed={zoomSpeed}
+            globalGrowthModifier={globalGrowthModifier}
           />
         </Canvas>
       )}

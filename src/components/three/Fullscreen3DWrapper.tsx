@@ -15,7 +15,10 @@ import {
   Zap,
   Sparkles,
   Trash2,
+  Camera,
+  Download,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CameraPreset {
   name: string;
@@ -30,6 +33,7 @@ interface Fullscreen3DWrapperProps {
     enableZoom: boolean;
     controlsRef: React.RefObject<any>;
     sceneRef: React.RefObject<THREE.Scene | null>;
+    canvasRef: React.RefObject<HTMLCanvasElement | null>;
     onCameraChange?: () => void;
     performanceMode: boolean;
     zoomSpeed: number;
@@ -44,6 +48,8 @@ interface Fullscreen3DWrapperProps {
   autoFitOnLoad?: boolean;
   /** Zoom speed multiplier (default 0.5 for smoother zooming) */
   zoomSpeed?: number;
+  /** Custom controls to render in the bottom left */
+  customControls?: React.ReactNode;
 }
 
 const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
@@ -55,10 +61,12 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
   sceneRadius = 5,
   autoFitOnLoad = true,
   zoomSpeed = 0.5,
+  customControls,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<any>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [isZoomLocked, setIsZoomLocked] = useState(false);
@@ -208,6 +216,28 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
     hasRestoredCameraRef.current = false;
     handleResetView();
   }, [storageKey, handleResetView]);
+
+  // Screenshot export function
+  const handleScreenshot = useCallback(() => {
+    // Find the canvas element inside the container
+    const canvas = containerRef.current?.querySelector('canvas');
+    if (!canvas) {
+      toast.error('Could not find 3D canvas');
+      return;
+    }
+    
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Screenshot saved!');
+    } catch (e) {
+      toast.error('Failed to capture screenshot');
+      console.error('Screenshot error:', e);
+    }
+  }, [title]);
 
   // Prevent "stuck zoom" when leaving fullscreen (zoom is disabled outside fullscreen)
   useEffect(() => {
@@ -376,6 +406,7 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         enableZoom: zoomEnabled,
         controlsRef,
         sceneRef,
+        canvasRef,
         onCameraChange: updateCameraInfo,
         performanceMode,
         zoomSpeed,
@@ -464,6 +495,14 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
         >
           <RotateCcw className="w-4 h-4" />
         </button>
+        {/* Screenshot */}
+        <button
+          onClick={handleScreenshot}
+          className="p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors text-muted-foreground hover:text-primary"
+          title="Save Screenshot"
+        >
+          <Camera className="w-4 h-4" />
+        </button>
         
         {/* Fullscreen Toggle */}
         <button
@@ -504,20 +543,28 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
           </div>
 
           {/* Camera HUD */}
-          <div className="absolute bottom-3 left-3 glass-card px-4 py-3 z-10">
-            <div className="text-xs text-muted-foreground mb-1">Camera</div>
-            <div className="flex gap-4 text-sm font-mono">
-              <div>
-                <span className="text-muted-foreground">Dist:</span>{' '}
-                <span className="text-foreground">{cameraInfo.distance}</span>
+          <div className="absolute bottom-3 left-3 flex flex-col gap-2 z-10">
+            {/* Custom controls slot */}
+            {customControls && (
+              <div className="glass-card px-4 py-3">
+                {customControls}
               </div>
-              <div>
-                <span className="text-muted-foreground">Az:</span>{' '}
-                <span className="text-foreground">{cameraInfo.azimuth}°</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Pol:</span>{' '}
-                <span className="text-foreground">{cameraInfo.polar}°</span>
+            )}
+            <div className="glass-card px-4 py-3">
+              <div className="text-xs text-muted-foreground mb-1">Camera</div>
+              <div className="flex gap-4 text-sm font-mono">
+                <div>
+                  <span className="text-muted-foreground">Dist:</span>{' '}
+                  <span className="text-foreground">{cameraInfo.distance}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Az:</span>{' '}
+                  <span className="text-foreground">{cameraInfo.azimuth}°</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Pol:</span>{' '}
+                  <span className="text-foreground">{cameraInfo.polar}°</span>
+                </div>
               </div>
             </div>
           </div>
