@@ -14,6 +14,7 @@ import {
   Focus,
   Zap,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 
 interface CameraPreset {
@@ -196,6 +197,17 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
       updateCameraInfo();
     }
   }, [defaultCameraPosition, defaultTarget, updateCameraInfo]);
+
+  // Clear saved camera position and reset to defaults
+  const handleClearSavedView = useCallback(() => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch (e) {
+      // localStorage error
+    }
+    hasRestoredCameraRef.current = false;
+    handleResetView();
+  }, [storageKey, handleResetView]);
 
   // Prevent "stuck zoom" when leaving fullscreen (zoom is disabled outside fullscreen)
   useEffect(() => {
@@ -435,6 +447,15 @@ const Fullscreen3DWrapper: React.FC<Fullscreen3DWrapperProps> = ({
           {isZoomLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
         </button>
         
+        {/* Clear Saved View */}
+        <button
+          onClick={handleClearSavedView}
+          className="p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-glass-border hover:bg-background transition-colors text-muted-foreground hover:text-destructive"
+          title="Clear Saved View & Reset to Defaults"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+
         {/* Reset View */}
         <button
           onClick={handleResetView}
