@@ -5,7 +5,34 @@ import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, X, Droplets, Sun, Thermometer, Calendar } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, Droplets, Sun, Thermometer, Calendar, Grid3X3, Circle, LayoutGrid } from 'lucide-react';
+
+// Layout types
+type LayoutType = 'grid' | 'circular' | 'rows';
+
+// Get plant position based on layout type
+const getPlantPosition = (index: number, total: number, layout: LayoutType): [number, number, number] => {
+  switch (layout) {
+    case 'circular': {
+      const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+      const radius = 2.5;
+      return [Math.cos(angle) * radius, 0, Math.sin(angle) * radius];
+    }
+    case 'rows': {
+      // Greenhouse-style rows (2 long rows)
+      const row = index % 2;
+      const col = Math.floor(index / 2);
+      return [(col - 1.25) * 1.8, 0, (row - 0.5) * 3];
+    }
+    case 'grid':
+    default: {
+      const cols = 3;
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      return [(col - 1) * 2, 0, (row - 0.5) * 1.8];
+    }
+  }
+};
 
 // Helper component to capture scene reference
 const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
@@ -401,7 +428,10 @@ const PlantScene: React.FC<{
   globalGrowthModifier: number;
   selectedPlantIndex: number | null;
   onPlantClick: (index: number) => void;
-}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier, selectedPlantIndex, onPlantClick }) => {
+  layout: LayoutType;
+}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier, selectedPlantIndex, onPlantClick, layout }) => {
+  const displayPlants = performanceMode ? plants.slice(0, 4) : plants;
+  
   return (
     <>
       {/* Lighting */}
@@ -432,18 +462,16 @@ const PlantScene: React.FC<{
       {/* Water mist effect */}
       <WaterMist performanceMode={performanceMode} />
       
-      {/* Plants - arranged in a nice grid */}
-      {(performanceMode ? plants.slice(0, 4) : plants).map((plant, i) => {
-        const row = Math.floor(i / 3);
-        const col = i % 3;
-        // Apply global growth modifier to each plant's growth stage
+      {/* Plants - arranged based on layout */}
+      {displayPlants.map((plant, i) => {
+        const position = getPlantPosition(i, displayPlants.length, layout);
         const modifiedGrowth = Math.min(100, Math.max(0, plant.growthStage * (globalGrowthModifier / 100)));
         return (
           <Plant
             key={i}
             plantType={plant.type}
             growthStage={modifiedGrowth}
-            position={[(col - 1) * 2, 0, (row - 0.5) * 1.8]}
+            position={position}
             performanceMode={performanceMode}
             showLabel={!performanceMode}
             onClick={(e) => { e.stopPropagation(); onPlantClick(i); }}
@@ -479,6 +507,35 @@ const PlantScene: React.FC<{
   );
 };
 
+// Layout selector component
+const LayoutSelector: React.FC<{
+  layout: LayoutType;
+  onChange: (layout: LayoutType) => void;
+}> = ({ layout, onChange }) => {
+  const layouts: { type: LayoutType; icon: React.ReactNode; label: string }[] = [
+    { type: 'grid', icon: <Grid3X3 className="h-3 w-3" />, label: 'Grid' },
+    { type: 'circular', icon: <Circle className="h-3 w-3" />, label: 'Circular' },
+    { type: 'rows', icon: <LayoutGrid className="h-3 w-3" />, label: 'Rows' },
+  ];
+
+  return (
+    <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+      {layouts.map(({ type, icon, label }) => (
+        <Button
+          key={type}
+          variant={layout === type ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => onChange(type)}
+          title={label}
+        >
+          {icon}
+        </Button>
+      ))}
+    </div>
+  );
+};
+
 // Growth slider control component
 const GrowthSliderControl: React.FC<{
   value: number;
@@ -486,53 +543,71 @@ const GrowthSliderControl: React.FC<{
   isPlaying: boolean;
   onTogglePlay: () => void;
   onReset: () => void;
-}> = ({ value, onChange, isPlaying, onTogglePlay, onReset }) => {
+  layout: LayoutType;
+  onLayoutChange: (layout: LayoutType) => void;
+}> = ({ value, onChange, isPlaying, onTogglePlay, onReset, layout, onLayoutChange }) => {
   return (
-    <div className="w-80">
-      <div className="text-xs text-muted-foreground mb-2 flex justify-between items-center">
-        <span className="flex items-center gap-2">
-          Growth Stage
-          {isPlaying && (
-            <span className="inline-flex items-center gap-1 text-primary animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              Time-lapse
-            </span>
-          )}
-        </span>
-        <span className="font-mono">{value}%</span>
+    <div className="space-y-3">
+      {/* Layout Selector */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">Layout</span>
+        <LayoutSelector layout={layout} onChange={onLayoutChange} />
       </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={onTogglePlay}
-          title={isPlaying ? 'Pause time-lapse' : 'Play time-lapse'}
-        >
-          {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-        </Button>
-        <Slider
-          value={[value]}
-          onValueChange={(values) => onChange(values[0])}
-          min={10}
-          max={100}
-          step={1}
-          className="flex-1"
-        />
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={onReset}
-          title="Reset to 100%"
-        >
-          <RotateCcw className="h-3 w-3" />
-        </Button>
+      
+      {/* Growth Controls */}
+      <div className="w-80">
+        <div className="text-xs text-muted-foreground mb-2 flex justify-between items-center">
+          <span className="flex items-center gap-2">
+            Growth Stage
+            {isPlaying && (
+              <span className="inline-flex items-center gap-1 text-primary animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                Time-lapse
+              </span>
+            )}
+          </span>
+          <span className="font-mono">{value}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={onTogglePlay}
+            title={isPlaying ? 'Pause time-lapse (Space)' : 'Play time-lapse (Space)'}
+          >
+            {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+          </Button>
+          <Slider
+            value={[value]}
+            onValueChange={(values) => onChange(values[0])}
+            min={10}
+            max={100}
+            step={1}
+            className="flex-1"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={onReset}
+            title="Reset to 100%"
+          >
+            <RotateCcw className="h-3 w-3" />
+          </Button>
+        </div>
+        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+          <span>Seedling</span>
+          <span>Mature</span>
+          <span>Harvest</span>
+        </div>
       </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-        <span>Seedling</span>
-        <span>Mature</span>
-        <span>Harvest</span>
+      
+      {/* Keyboard hints */}
+      <div className="text-[10px] text-muted-foreground/70 flex flex-wrap gap-x-3 gap-y-1">
+        <span>←→ Navigate</span>
+        <span>Esc Deselect</span>
+        <span>Space Play/Pause</span>
       </div>
     </div>
   );
@@ -665,8 +740,10 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
   const [globalGrowthModifier, setGlobalGrowthModifier] = useState(100);
   const [selectedPlantIndex, setSelectedPlantIndex] = useState<number | null>(null);
   const [isTimeLapsePlaying, setIsTimeLapsePlaying] = useState(false);
+  const [layout, setLayout] = useState<LayoutType>('grid');
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Time-lapse animation effect
   useEffect(() => {
@@ -704,6 +781,44 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
     };
   }, [isTimeLapsePlaying]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedPlantIndex(prev => {
+            if (prev === null) return 0;
+            return (prev + 1) % plants.length;
+          });
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedPlantIndex(prev => {
+            if (prev === null) return plants.length - 1;
+            return (prev - 1 + plants.length) % plants.length;
+          });
+          break;
+        case 'Escape':
+          setSelectedPlantIndex(null);
+          break;
+        case ' ':
+          e.preventDefault();
+          setIsTimeLapsePlaying(prev => !prev);
+          lastTimeRef.current = 0;
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [plants.length]);
+
   const handleTogglePlay = useCallback(() => {
     setIsTimeLapsePlaying(prev => !prev);
     lastTimeRef.current = 0;
@@ -719,7 +834,7 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full" tabIndex={0}>
       <Fullscreen3DWrapper
         title="Plant Growth Simulation"
         defaultCameraPosition={DEFAULT_CAMERA_POSITION}
@@ -732,6 +847,8 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
             isPlaying={isTimeLapsePlaying}
             onTogglePlay={handleTogglePlay}
             onReset={handleReset}
+            layout={layout}
+            onLayoutChange={setLayout}
           />
         }
       >
@@ -754,6 +871,7 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
               globalGrowthModifier={globalGrowthModifier}
               selectedPlantIndex={selectedPlantIndex}
               onPlantClick={handlePlantClick}
+              layout={layout}
             />
           </Canvas>
         )}
