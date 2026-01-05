@@ -1,9 +1,11 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import React, { useRef, useMemo, useEffect, useState, useCallback } from 'react';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Float, Environment, Sparkles, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import { Play, Pause, RotateCcw, X, Droplets, Sun, Thermometer, Calendar } from 'lucide-react';
 
 // Helper component to capture scene reference
 const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
@@ -50,18 +52,33 @@ const PlantLabel: React.FC<PlantLabelProps> = ({ plantType, growthStage, positio
   );
 };
 
+// Extended plant data for detail panel
+interface PlantData {
+  type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
+  growthStage: number;
+  name?: string;
+  plantedDate?: string;
+  wateringSchedule?: string;
+  lightRequirement?: string;
+  temperature?: { min: number; max: number };
+  health?: 'excellent' | 'good' | 'fair' | 'poor';
+}
+
 interface PlantProps {
   growthStage: number;
   plantType: 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
   position: [number, number, number];
   performanceMode: boolean;
   showLabel?: boolean;
+  onClick?: (e: ThreeEvent<MouseEvent>) => void;
+  isSelected?: boolean;
 }
 
 // Enhanced plant component with better visuals
-const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode, showLabel = true }) => {
+const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode, showLabel = true, onClick, isSelected = false }) => {
   const plantRef = useRef<THREE.Group>(null);
   const leavesRef = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
   
   const stemHeight = useMemo(() => 0.1 + (growthStage / 100) * 2, [growthStage]);
   const leafScale = useMemo(() => 0.3 + (growthStage / 100) * 1, [growthStage]);
@@ -92,7 +109,25 @@ const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, perform
   const numFruits = showFruits ? Math.floor((growthStage - 50) / 12) : 0;
 
   return (
-    <group ref={plantRef} position={position}>
+    <group 
+      ref={plantRef} 
+      position={position}
+      onClick={onClick}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+    >
+      {/* Selection/Hover ring */}
+      {(isSelected || hovered) && (
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.4, 0.5, 32]} />
+          <meshBasicMaterial 
+            color={isSelected ? '#22C55E' : '#3B82F6'} 
+            transparent 
+            opacity={0.6} 
+          />
+        </mesh>
+      )}
+      
       {/* Floating label */}
       {showLabel && <PlantLabel plantType={plantType} growthStage={growthStage} position={[0, 0, 0]} />}
       
@@ -358,13 +393,15 @@ const WaterMist: React.FC<{ performanceMode: boolean }> = ({ performanceMode }) 
 };
 
 const PlantScene: React.FC<{ 
-  plants: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[]; 
+  plants: PlantData[]; 
   controlsRef: React.RefObject<any>; 
   enableZoom: boolean;
   performanceMode: boolean;
   zoomSpeed: number;
   globalGrowthModifier: number;
-}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier }) => {
+  selectedPlantIndex: number | null;
+  onPlantClick: (index: number) => void;
+}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier, selectedPlantIndex, onPlantClick }) => {
   return (
     <>
       {/* Lighting */}
@@ -409,6 +446,8 @@ const PlantScene: React.FC<{
             position={[(col - 1) * 2, 0, (row - 0.5) * 1.8]}
             performanceMode={performanceMode}
             showLabel={!performanceMode}
+            onClick={(e) => { e.stopPropagation(); onPlantClick(i); }}
+            isSelected={selectedPlantIndex === i}
           />
         );
       })}
@@ -444,21 +483,52 @@ const PlantScene: React.FC<{
 const GrowthSliderControl: React.FC<{
   value: number;
   onChange: (value: number) => void;
-}> = ({ value, onChange }) => {
+  isPlaying: boolean;
+  onTogglePlay: () => void;
+  onReset: () => void;
+}> = ({ value, onChange, isPlaying, onTogglePlay, onReset }) => {
   return (
-    <div className="w-64">
-      <div className="text-xs text-muted-foreground mb-2 flex justify-between">
-        <span>Growth Stage</span>
+    <div className="w-80">
+      <div className="text-xs text-muted-foreground mb-2 flex justify-between items-center">
+        <span className="flex items-center gap-2">
+          Growth Stage
+          {isPlaying && (
+            <span className="inline-flex items-center gap-1 text-primary animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Time-lapse
+            </span>
+          )}
+        </span>
         <span className="font-mono">{value}%</span>
       </div>
-      <Slider
-        value={[value]}
-        onValueChange={(values) => onChange(values[0])}
-        min={10}
-        max={100}
-        step={5}
-        className="w-full"
-      />
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={onTogglePlay}
+          title={isPlaying ? 'Pause time-lapse' : 'Play time-lapse'}
+        >
+          {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+        </Button>
+        <Slider
+          value={[value]}
+          onValueChange={(values) => onChange(values[0])}
+          min={10}
+          max={100}
+          step={1}
+          className="flex-1"
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={onReset}
+          title="Reset to 100%"
+        >
+          <RotateCcw className="h-3 w-3" />
+        </Button>
+      </div>
       <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
         <span>Seedling</span>
         <span>Mature</span>
@@ -468,59 +538,236 @@ const GrowthSliderControl: React.FC<{
   );
 };
 
+// Plant detail panel component
+const PlantDetailPanel: React.FC<{
+  plant: PlantData;
+  growthModifier: number;
+  onClose: () => void;
+}> = ({ plant, growthModifier, onClose }) => {
+  const modifiedGrowth = Math.min(100, Math.max(0, plant.growthStage * (growthModifier / 100)));
+  const healthColors = {
+    excellent: 'text-green-500',
+    good: 'text-emerald-400',
+    fair: 'text-yellow-500',
+    poor: 'text-red-500',
+  };
+  
+  const getGrowthStageLabel = (growth: number) => {
+    if (growth < 25) return 'Seedling';
+    if (growth < 50) return 'Vegetative';
+    if (growth < 75) return 'Flowering';
+    return 'Fruiting';
+  };
+
+  return (
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-72 bg-background/95 backdrop-blur-md border border-border rounded-xl shadow-2xl z-20 overflow-hidden animate-scale-in">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary/20 to-emerald-500/20 px-4 py-3 flex items-center justify-between">
+        <h3 className="font-semibold capitalize text-foreground">{plant.name || plant.type}</h3>
+        <button 
+          onClick={onClose}
+          className="p-1 hover:bg-background/50 rounded-md transition-colors"
+        >
+          <X className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+      
+      {/* Content */}
+      <div className="p-4 space-y-4">
+        {/* Growth Progress */}
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-muted-foreground">Growth Progress</span>
+            <span className="font-medium">{Math.round(modifiedGrowth)}%</span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-300"
+              style={{ width: `${modifiedGrowth}%` }}
+            />
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Stage: {getGrowthStageLabel(modifiedGrowth)}
+          </div>
+        </div>
+        
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Droplets className="w-3 h-3" />
+              <span className="text-xs">Watering</span>
+            </div>
+            <div className="text-sm font-medium">
+              {plant.wateringSchedule || 'Every 2 days'}
+            </div>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Sun className="w-3 h-3" />
+              <span className="text-xs">Light</span>
+            </div>
+            <div className="text-sm font-medium">
+              {plant.lightRequirement || 'Full Sun'}
+            </div>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Thermometer className="w-3 h-3" />
+              <span className="text-xs">Temperature</span>
+            </div>
+            <div className="text-sm font-medium">
+              {plant.temperature ? `${plant.temperature.min}–${plant.temperature.max}°C` : '18–24°C'}
+            </div>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Calendar className="w-3 h-3" />
+              <span className="text-xs">Planted</span>
+            </div>
+            <div className="text-sm font-medium">
+              {plant.plantedDate || '2 weeks ago'}
+            </div>
+          </div>
+        </div>
+        
+        {/* Health Status */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <span className="text-sm text-muted-foreground">Health Status</span>
+          <span className={`text-sm font-medium capitalize ${healthColors[plant.health || 'good']}`}>
+            {plant.health || 'Good'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface PlantGrowth3DProps {
-  plants?: { type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber'; growthStage: number }[];
+  plants?: PlantData[];
 }
 
 const DEFAULT_CAMERA_POSITION: [number, number, number] = [5, 4, 5];
 const DEFAULT_TARGET: [number, number, number] = [0, 0.5, 0];
 
+const DEFAULT_PLANTS: PlantData[] = [
+  { type: 'tomato', growthStage: 85, name: 'Cherry Tomato', health: 'excellent', wateringSchedule: 'Daily', lightRequirement: 'Full Sun', temperature: { min: 18, max: 26 }, plantedDate: '6 weeks ago' },
+  { type: 'lettuce', growthStage: 70, name: 'Butterhead Lettuce', health: 'good', wateringSchedule: 'Every 2 days', lightRequirement: 'Partial Shade', temperature: { min: 15, max: 20 }, plantedDate: '4 weeks ago' },
+  { type: 'pepper', growthStage: 90, name: 'Bell Pepper', health: 'excellent', wateringSchedule: 'Every 3 days', lightRequirement: 'Full Sun', temperature: { min: 20, max: 28 }, plantedDate: '8 weeks ago' },
+  { type: 'cucumber', growthStage: 55, name: 'English Cucumber', health: 'good', wateringSchedule: 'Daily', lightRequirement: 'Full Sun', temperature: { min: 18, max: 24 }, plantedDate: '3 weeks ago' },
+  { type: 'tomato', growthStage: 40, name: 'Roma Tomato', health: 'fair', wateringSchedule: 'Daily', lightRequirement: 'Full Sun', temperature: { min: 18, max: 26 }, plantedDate: '2 weeks ago' },
+  { type: 'lettuce', growthStage: 95, name: 'Romaine Lettuce', health: 'excellent', wateringSchedule: 'Every 2 days', lightRequirement: 'Partial Shade', temperature: { min: 15, max: 20 }, plantedDate: '5 weeks ago' },
+];
+
 const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({ 
-  plants = [
-    { type: 'tomato', growthStage: 85 },
-    { type: 'lettuce', growthStage: 70 },
-    { type: 'pepper', growthStage: 90 },
-    { type: 'cucumber', growthStage: 55 },
-    { type: 'tomato', growthStage: 40 },
-    { type: 'lettuce', growthStage: 95 },
-  ] 
+  plants = DEFAULT_PLANTS
 }) => {
   const [globalGrowthModifier, setGlobalGrowthModifier] = useState(100);
+  const [selectedPlantIndex, setSelectedPlantIndex] = useState<number | null>(null);
+  const [isTimeLapsePlaying, setIsTimeLapsePlaying] = useState(false);
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
+
+  // Time-lapse animation effect
+  useEffect(() => {
+    if (!isTimeLapsePlaying) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      return;
+    }
+
+    const animate = (timestamp: number) => {
+      if (!lastTimeRef.current) lastTimeRef.current = timestamp;
+      const delta = timestamp - lastTimeRef.current;
+      
+      // Update every 50ms for smooth animation (cycle from 10% to 100% over ~5 seconds)
+      if (delta > 50) {
+        setGlobalGrowthModifier(prev => {
+          const next = prev + 1;
+          if (next > 100) return 10;
+          return next;
+        });
+        lastTimeRef.current = timestamp;
+      }
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isTimeLapsePlaying]);
+
+  const handleTogglePlay = useCallback(() => {
+    setIsTimeLapsePlaying(prev => !prev);
+    lastTimeRef.current = 0;
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setIsTimeLapsePlaying(false);
+    setGlobalGrowthModifier(100);
+  }, []);
+
+  const handlePlantClick = useCallback((index: number) => {
+    setSelectedPlantIndex(prev => prev === index ? null : index);
+  }, []);
 
   return (
-    <Fullscreen3DWrapper
-      title="Plant Growth Simulation"
-      defaultCameraPosition={DEFAULT_CAMERA_POSITION}
-      defaultTarget={DEFAULT_TARGET}
-      className="bg-gradient-to-b from-slate-900 via-slate-800 to-emerald-950"
-      customControls={
-        <GrowthSliderControl
-          value={globalGrowthModifier}
-          onChange={setGlobalGrowthModifier}
-        />
-      }
-    >
-      {({ enableZoom, controlsRef, sceneRef, canvasRef, performanceMode, zoomSpeed }) => (
-        <Canvas 
-          camera={{ position: DEFAULT_CAMERA_POSITION, fov: 45 }}
-          shadows={!performanceMode}
-          dpr={performanceMode ? 1 : [1, 2]}
-          gl={{ preserveDrawingBuffer: true }}
-        >
-          <SceneCapture sceneRef={sceneRef} />
-          <color attach="background" args={['#0F1A0F']} />
-          <fog attach="fog" args={['#0F1A0F', 8, 25]} />
-          <PlantScene 
-            plants={plants} 
-            controlsRef={controlsRef} 
-            enableZoom={enableZoom} 
-            performanceMode={performanceMode} 
-            zoomSpeed={zoomSpeed}
-            globalGrowthModifier={globalGrowthModifier}
+    <div className="relative w-full h-full">
+      <Fullscreen3DWrapper
+        title="Plant Growth Simulation"
+        defaultCameraPosition={DEFAULT_CAMERA_POSITION}
+        defaultTarget={DEFAULT_TARGET}
+        className="bg-gradient-to-b from-slate-900 via-slate-800 to-emerald-950"
+        customControls={
+          <GrowthSliderControl
+            value={globalGrowthModifier}
+            onChange={setGlobalGrowthModifier}
+            isPlaying={isTimeLapsePlaying}
+            onTogglePlay={handleTogglePlay}
+            onReset={handleReset}
           />
-        </Canvas>
+        }
+      >
+        {({ enableZoom, controlsRef, sceneRef, canvasRef, performanceMode, zoomSpeed }) => (
+          <Canvas 
+            camera={{ position: DEFAULT_CAMERA_POSITION, fov: 45 }}
+            shadows={!performanceMode}
+            dpr={performanceMode ? 1 : [1, 2]}
+            gl={{ preserveDrawingBuffer: true }}
+          >
+            <SceneCapture sceneRef={sceneRef} />
+            <color attach="background" args={['#0F1A0F']} />
+            <fog attach="fog" args={['#0F1A0F', 8, 25]} />
+            <PlantScene 
+              plants={plants} 
+              controlsRef={controlsRef} 
+              enableZoom={enableZoom} 
+              performanceMode={performanceMode} 
+              zoomSpeed={zoomSpeed}
+              globalGrowthModifier={globalGrowthModifier}
+              selectedPlantIndex={selectedPlantIndex}
+              onPlantClick={handlePlantClick}
+            />
+          </Canvas>
+        )}
+      </Fullscreen3DWrapper>
+      
+      {/* Plant Detail Panel */}
+      {selectedPlantIndex !== null && plants[selectedPlantIndex] && (
+        <PlantDetailPanel
+          plant={plants[selectedPlantIndex]}
+          growthModifier={globalGrowthModifier}
+          onClose={() => setSelectedPlantIndex(null)}
+        />
       )}
-    </Fullscreen3DWrapper>
+    </div>
   );
 };
 
