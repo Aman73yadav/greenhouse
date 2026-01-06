@@ -5,10 +5,23 @@ import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, X, Droplets, Sun, Thermometer, Calendar, Grid3X3, Circle, LayoutGrid } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Play, Pause, RotateCcw, X, Droplets, Sun, Thermometer, Calendar, Grid3X3, Circle, LayoutGrid, GitCompare, Filter, ArrowUpDown, Leaf } from 'lucide-react';
 
 // Layout types
 type LayoutType = 'grid' | 'circular' | 'rows';
+type PlantType = 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
+type HealthType = 'excellent' | 'good' | 'fair' | 'poor';
+type SortOption = 'name' | 'growth' | 'health' | 'type';
+type FilterType = 'all' | PlantType;
+type HealthFilter = 'all' | HealthType;
+
+// Environment settings
+interface EnvironmentSettings {
+  lighting: number; // 0-100
+  humidity: number; // 0-100
+  temperature: number; // 10-40°C
+}
 
 // Get plant position based on layout type
 const getPlantPosition = (index: number, total: number, layout: LayoutType): [number, number, number] => {
@@ -81,28 +94,30 @@ const PlantLabel: React.FC<PlantLabelProps> = ({ plantType, growthStage, positio
 
 // Extended plant data for detail panel
 interface PlantData {
-  type: 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
+  type: PlantType;
   growthStage: number;
   name?: string;
   plantedDate?: string;
   wateringSchedule?: string;
   lightRequirement?: string;
   temperature?: { min: number; max: number };
-  health?: 'excellent' | 'good' | 'fair' | 'poor';
+  health?: HealthType;
 }
 
 interface PlantProps {
   growthStage: number;
-  plantType: 'tomato' | 'lettuce' | 'pepper' | 'cucumber';
+  plantType: PlantType;
   position: [number, number, number];
   performanceMode: boolean;
   showLabel?: boolean;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
   isSelected?: boolean;
+  isComparing?: boolean;
+  environmentSettings?: EnvironmentSettings;
 }
 
 // Enhanced plant component with better visuals
-const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode, showLabel = true, onClick, isSelected = false }) => {
+const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, performanceMode, showLabel = true, onClick, isSelected = false, isComparing = false, environmentSettings }) => {
   const plantRef = useRef<THREE.Group>(null);
   const leavesRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
@@ -143,12 +158,12 @@ const Plant: React.FC<PlantProps> = ({ growthStage, plantType, position, perform
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
     >
-      {/* Selection/Hover ring */}
-      {(isSelected || hovered) && (
+      {/* Selection/Hover/Comparison ring */}
+      {(isSelected || hovered || isComparing) && (
         <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.4, 0.5, 32]} />
           <meshBasicMaterial 
-            color={isSelected ? '#22C55E' : '#3B82F6'} 
+            color={isComparing ? '#F59E0B' : isSelected ? '#22C55E' : '#3B82F6'} 
             transparent 
             opacity={0.6} 
           />
@@ -429,25 +444,49 @@ const PlantScene: React.FC<{
   selectedPlantIndex: number | null;
   onPlantClick: (index: number) => void;
   layout: LayoutType;
-}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier, selectedPlantIndex, onPlantClick, layout }) => {
+  environmentSettings: EnvironmentSettings;
+  comparisonIndices: number[];
+}> = ({ plants, controlsRef, enableZoom, performanceMode, zoomSpeed, globalGrowthModifier, selectedPlantIndex, onPlantClick, layout, environmentSettings, comparisonIndices }) => {
   const displayPlants = performanceMode ? plants.slice(0, 4) : plants;
+  
+  // Adjust lighting based on environment settings
+  const lightIntensity = 0.35 + (environmentSettings.lighting / 100) * 0.5;
+  const ambientIntensity = performanceMode ? 0.5 : 0.2 + (environmentSettings.lighting / 100) * 0.3;
+  
+  // Temperature affects light color (warmer = more orange, cooler = more blue)
+  const tempFactor = (environmentSettings.temperature - 10) / 30; // 0 to 1
+  const lightColor = tempFactor > 0.5 ? '#FFE4B5' : '#E8F4FF';
   
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={performanceMode ? 0.5 : 0.35} />
+      {/* Lighting - adjusted by environment controls */}
+      <ambientLight intensity={ambientIntensity} />
       <directionalLight 
         position={[8, 12, 8]} 
-        intensity={performanceMode ? 0.6 : 0.8} 
+        intensity={performanceMode ? 0.6 : lightIntensity} 
         castShadow={!performanceMode}
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
+        color={lightColor}
       />
       {!performanceMode && (
         <>
-          <pointLight position={[-5, 6, -5]} intensity={0.25} color="#FFE4B5" />
-          <pointLight position={[5, 3, 5]} intensity={0.15} color="#87CEEB" />
+          <pointLight position={[-5, 6, -5]} intensity={0.25 * (environmentSettings.lighting / 100)} color="#FFE4B5" />
+          <pointLight position={[5, 3, 5]} intensity={0.15 * (environmentSettings.lighting / 100)} color="#87CEEB" />
         </>
+      )}
+      
+      {/* Humidity mist effect */}
+      {!performanceMode && environmentSettings.humidity > 60 && (
+        <Sparkles
+          count={Math.floor(environmentSettings.humidity / 2)}
+          scale={[8, 3, 6]}
+          position={[0, 1, 0]}
+          size={2}
+          speed={0.2}
+          opacity={0.3}
+          color="#B0E0E6"
+        />
       )}
       
       {/* Environment */}
@@ -456,7 +495,7 @@ const PlantScene: React.FC<{
       {/* Growing table */}
       <GrowingTable />
       
-      {/* Grow lights */}
+      {/* Grow lights - intensity based on environment */}
       <GrowLights performanceMode={performanceMode} />
       
       {/* Water mist effect */}
@@ -466,6 +505,7 @@ const PlantScene: React.FC<{
       {displayPlants.map((plant, i) => {
         const position = getPlantPosition(i, displayPlants.length, layout);
         const modifiedGrowth = Math.min(100, Math.max(0, plant.growthStage * (globalGrowthModifier / 100)));
+        const isComparing = comparisonIndices.includes(i);
         return (
           <Plant
             key={i}
@@ -476,6 +516,8 @@ const PlantScene: React.FC<{
             showLabel={!performanceMode}
             onClick={(e) => { e.stopPropagation(); onPlantClick(i); }}
             isSelected={selectedPlantIndex === i}
+            isComparing={isComparing}
+            environmentSettings={environmentSettings}
           />
         );
       })}
@@ -506,7 +548,6 @@ const PlantScene: React.FC<{
     </>
   );
 };
-
 // Layout selector component
 const LayoutSelector: React.FC<{
   layout: LayoutType;
@@ -603,12 +644,343 @@ const GrowthSliderControl: React.FC<{
         </div>
       </div>
       
-      {/* Keyboard hints */}
       <div className="text-[10px] text-muted-foreground/70 flex flex-wrap gap-x-3 gap-y-1">
         <span>←→ Navigate</span>
         <span>Esc Deselect</span>
         <span>Space Play/Pause</span>
       </div>
+    </div>
+  );
+};
+
+// Environment Controls Overlay
+const EnvironmentControlsOverlay: React.FC<{
+  settings: EnvironmentSettings;
+  onChange: (settings: EnvironmentSettings) => void;
+  onClose: () => void;
+}> = ({ settings, onChange, onClose }) => {
+  return (
+    <div className="absolute right-4 top-16 w-72 bg-background/95 backdrop-blur-md border border-border rounded-xl shadow-2xl z-20 overflow-hidden animate-scale-in">
+      <div className="bg-gradient-to-r from-amber-500/20 to-blue-500/20 px-4 py-3 flex items-center justify-between">
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
+          <Thermometer className="w-4 h-4" />
+          Environment Controls
+        </h3>
+        <button onClick={onClose} className="p-1 hover:bg-background/50 rounded-md transition-colors">
+          <X className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+      <div className="p-4 space-y-4">
+        {/* Lighting */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <Sun className="w-4 h-4 text-yellow-500" />
+              Lighting
+            </span>
+            <span className="font-mono text-foreground">{settings.lighting}%</span>
+          </div>
+          <Slider
+            value={[settings.lighting]}
+            onValueChange={([value]) => onChange({ ...settings, lighting: value })}
+            min={10}
+            max={100}
+            step={1}
+          />
+        </div>
+        
+        {/* Humidity */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <Droplets className="w-4 h-4 text-blue-500" />
+              Humidity
+            </span>
+            <span className="font-mono text-foreground">{settings.humidity}%</span>
+          </div>
+          <Slider
+            value={[settings.humidity]}
+            onValueChange={([value]) => onChange({ ...settings, humidity: value })}
+            min={20}
+            max={100}
+            step={1}
+          />
+        </div>
+        
+        {/* Temperature */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <Thermometer className="w-4 h-4 text-red-500" />
+              Temperature
+            </span>
+            <span className="font-mono text-foreground">{settings.temperature}°C</span>
+          </div>
+          <Slider
+            value={[settings.temperature]}
+            onValueChange={([value]) => onChange({ ...settings, temperature: value })}
+            min={10}
+            max={40}
+            step={1}
+          />
+        </div>
+        
+        {/* Quick presets */}
+        <div className="pt-2 border-t border-border">
+          <div className="text-xs text-muted-foreground mb-2">Quick Presets</div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => onChange({ lighting: 80, humidity: 60, temperature: 24 })}
+            >
+              Optimal
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => onChange({ lighting: 100, humidity: 40, temperature: 30 })}
+            >
+              Summer
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => onChange({ lighting: 50, humidity: 80, temperature: 18 })}
+            >
+              Humid
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Comparison Panel
+const ComparisonPanel: React.FC<{
+  plants: PlantData[];
+  comparisonIndices: number[];
+  growthModifier: number;
+  onClose: () => void;
+  onRemove: (index: number) => void;
+}> = ({ plants, comparisonIndices, growthModifier, onClose, onRemove }) => {
+  if (comparisonIndices.length < 2) return null;
+  
+  const plantA = plants[comparisonIndices[0]];
+  const plantB = plants[comparisonIndices[1]];
+  
+  const growthA = Math.min(100, plantA.growthStage * (growthModifier / 100));
+  const growthB = Math.min(100, plantB.growthStage * (growthModifier / 100));
+  
+  const healthOrder: Record<HealthType, number> = { excellent: 4, good: 3, fair: 2, poor: 1 };
+  
+  const healthColors: Record<HealthType, string> = {
+    excellent: 'text-green-500',
+    good: 'text-emerald-400',
+    fair: 'text-yellow-500',
+    poor: 'text-red-500',
+  };
+  
+  const compareValue = (a: number, b: number) => {
+    if (a > b) return 'text-green-500';
+    if (a < b) return 'text-red-400';
+    return 'text-muted-foreground';
+  };
+
+  return (
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 w-80 bg-background/95 backdrop-blur-md border border-border rounded-xl shadow-2xl z-20 overflow-hidden animate-scale-in">
+      <div className="bg-gradient-to-r from-amber-500/20 to-purple-500/20 px-4 py-3 flex items-center justify-between">
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
+          <GitCompare className="w-4 h-4" />
+          Plant Comparison
+        </h3>
+        <button onClick={onClose} className="p-1 hover:bg-background/50 rounded-md transition-colors">
+          <X className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+      
+      <div className="p-4">
+        {/* Plant headers */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground mb-1">Plant A</div>
+            <div className="text-sm font-medium truncate">{plantA.name || plantA.type}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs text-muted-foreground"
+              onClick={() => onRemove(comparisonIndices[0])}
+            >
+              Remove
+            </Button>
+          </div>
+          <div className="flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">vs</span>
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground mb-1">Plant B</div>
+            <div className="text-sm font-medium truncate">{plantB.name || plantB.type}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs text-muted-foreground"
+              onClick={() => onRemove(comparisonIndices[1])}
+            >
+              Remove
+            </Button>
+          </div>
+        </div>
+        
+        {/* Comparison stats */}
+        <div className="space-y-3 border-t border-border pt-3">
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className={`text-center font-mono ${compareValue(growthA, growthB)}`}>{Math.round(growthA)}%</div>
+            <div className="text-center text-xs text-muted-foreground">Growth</div>
+            <div className={`text-center font-mono ${compareValue(growthB, growthA)}`}>{Math.round(growthB)}%</div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className={`text-center capitalize ${healthColors[plantA.health || 'good']}`}>{plantA.health || 'Good'}</div>
+            <div className="text-center text-xs text-muted-foreground">Health</div>
+            <div className={`text-center capitalize ${healthColors[plantB.health || 'good']}`}>{plantB.health || 'Good'}</div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="text-center capitalize">{plantA.type}</div>
+            <div className="text-center text-xs text-muted-foreground">Type</div>
+            <div className="text-center capitalize">{plantB.type}</div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="text-center text-xs">{plantA.wateringSchedule || 'Daily'}</div>
+            <div className="text-center text-xs text-muted-foreground">Water</div>
+            <div className="text-center text-xs">{plantB.wateringSchedule || 'Daily'}</div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="text-center text-xs">{plantA.lightRequirement || 'Full Sun'}</div>
+            <div className="text-center text-xs text-muted-foreground">Light</div>
+            <div className="text-center text-xs">{plantB.lightRequirement || 'Full Sun'}</div>
+          </div>
+        </div>
+        
+        {/* Growth difference */}
+        <div className="mt-4 pt-3 border-t border-border text-center">
+          <div className="text-xs text-muted-foreground">Growth Difference</div>
+          <div className={`text-lg font-mono font-bold ${Math.abs(growthA - growthB) > 20 ? 'text-amber-500' : 'text-green-500'}`}>
+            {Math.abs(growthA - growthB).toFixed(1)}%
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Filter and Sort Controls
+const FilterSortControls: React.FC<{
+  typeFilter: FilterType;
+  healthFilter: HealthFilter;
+  sortBy: SortOption;
+  sortAsc: boolean;
+  onTypeFilterChange: (filter: FilterType) => void;
+  onHealthFilterChange: (filter: HealthFilter) => void;
+  onSortChange: (sort: SortOption) => void;
+  onSortDirectionToggle: () => void;
+  showEnvironment: boolean;
+  onToggleEnvironment: () => void;
+  comparisonMode: boolean;
+  onToggleComparisonMode: () => void;
+  comparisonCount: number;
+}> = ({ 
+  typeFilter, healthFilter, sortBy, sortAsc, 
+  onTypeFilterChange, onHealthFilterChange, onSortChange, onSortDirectionToggle,
+  showEnvironment, onToggleEnvironment, comparisonMode, onToggleComparisonMode, comparisonCount
+}) => {
+  return (
+    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+      {/* Type Filter */}
+      <div className="flex items-center gap-1">
+        <Filter className="h-3 w-3 text-muted-foreground" />
+        <Select value={typeFilter} onValueChange={(v) => onTypeFilterChange(v as FilterType)}>
+          <SelectTrigger className="h-7 w-24 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="tomato">Tomato</SelectItem>
+            <SelectItem value="lettuce">Lettuce</SelectItem>
+            <SelectItem value="pepper">Pepper</SelectItem>
+            <SelectItem value="cucumber">Cucumber</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Health Filter */}
+      <Select value={healthFilter} onValueChange={(v) => onHealthFilterChange(v as HealthFilter)}>
+        <SelectTrigger className="h-7 w-24 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Health</SelectItem>
+          <SelectItem value="excellent">Excellent</SelectItem>
+          <SelectItem value="good">Good</SelectItem>
+          <SelectItem value="fair">Fair</SelectItem>
+          <SelectItem value="poor">Poor</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Sort */}
+      <div className="flex items-center gap-1">
+        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+        <Select value={sortBy} onValueChange={(v) => onSortChange(v as SortOption)}>
+          <SelectTrigger className="h-7 w-20 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="growth">Growth</SelectItem>
+            <SelectItem value="health">Health</SelectItem>
+            <SelectItem value="type">Type</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onSortDirectionToggle}>
+          <ArrowUpDown className={`h-3 w-3 transition-transform ${sortAsc ? '' : 'rotate-180'}`} />
+        </Button>
+      </div>
+
+      {/* Divider */}
+      <div className="w-px h-5 bg-border" />
+
+      {/* Environment Toggle */}
+      <Button
+        variant={showEnvironment ? 'secondary' : 'ghost'}
+        size="sm"
+        className="h-7 text-xs"
+        onClick={onToggleEnvironment}
+      >
+        <Thermometer className="h-3 w-3 mr-1" />
+        Env
+      </Button>
+
+      {/* Comparison Mode Toggle */}
+      <Button
+        variant={comparisonMode ? 'secondary' : 'ghost'}
+        size="sm"
+        className="h-7 text-xs"
+        onClick={onToggleComparisonMode}
+      >
+        <GitCompare className="h-3 w-3 mr-1" />
+        Compare
+        {comparisonCount > 0 && (
+          <span className="ml-1 bg-primary text-primary-foreground rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
+            {comparisonCount}
+          </span>
+        )}
+      </Button>
     </div>
   );
 };
@@ -735,7 +1107,7 @@ const DEFAULT_PLANTS: PlantData[] = [
 ];
 
 const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({ 
-  plants = DEFAULT_PLANTS
+  plants: initialPlants = DEFAULT_PLANTS
 }) => {
   const [globalGrowthModifier, setGlobalGrowthModifier] = useState(100);
   const [selectedPlantIndex, setSelectedPlantIndex] = useState<number | null>(null);
@@ -744,6 +1116,60 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // New state for environment, comparison, and filtering
+  const [environmentSettings, setEnvironmentSettings] = useState<EnvironmentSettings>({
+    lighting: 70,
+    humidity: 60,
+    temperature: 24
+  });
+  const [showEnvironmentControls, setShowEnvironmentControls] = useState(false);
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [comparisonIndices, setComparisonIndices] = useState<number[]>([]);
+  
+  // Filter and sort state
+  const [typeFilter, setTypeFilter] = useState<FilterType>('all');
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('name');
+  const [sortAsc, setSortAsc] = useState(true);
+
+  // Filter and sort plants
+  const plants = useMemo(() => {
+    let filtered = [...initialPlants];
+    
+    // Apply type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(p => p.type === typeFilter);
+    }
+    
+    // Apply health filter
+    if (healthFilter !== 'all') {
+      filtered = filtered.filter(p => p.health === healthFilter);
+    }
+    
+    // Apply sorting
+    const healthOrder: Record<HealthType, number> = { excellent: 4, good: 3, fair: 2, poor: 1 };
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = (a.name || a.type).localeCompare(b.name || b.type);
+          break;
+        case 'growth':
+          comparison = a.growthStage - b.growthStage;
+          break;
+        case 'health':
+          comparison = healthOrder[a.health || 'good'] - healthOrder[b.health || 'good'];
+          break;
+        case 'type':
+          comparison = a.type.localeCompare(b.type);
+          break;
+      }
+      return sortAsc ? comparison : -comparison;
+    });
+    
+    return filtered;
+  }, [initialPlants, typeFilter, healthFilter, sortBy, sortAsc]);
 
   // Time-lapse animation effect
   useEffect(() => {
@@ -806,6 +1232,8 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
           break;
         case 'Escape':
           setSelectedPlantIndex(null);
+          setComparisonMode(false);
+          setComparisonIndices([]);
           break;
         case ' ':
           e.preventDefault();
@@ -830,8 +1258,38 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
   }, []);
 
   const handlePlantClick = useCallback((index: number) => {
-    setSelectedPlantIndex(prev => prev === index ? null : index);
+    if (comparisonMode) {
+      // In comparison mode, add/remove from comparison
+      setComparisonIndices(prev => {
+        if (prev.includes(index)) {
+          return prev.filter(i => i !== index);
+        }
+        if (prev.length >= 2) {
+          // Replace the first one
+          return [prev[1], index];
+        }
+        return [...prev, index];
+      });
+    } else {
+      setSelectedPlantIndex(prev => prev === index ? null : index);
+    }
+  }, [comparisonMode]);
+
+  const handleRemoveFromComparison = useCallback((index: number) => {
+    setComparisonIndices(prev => prev.filter(i => i !== index));
   }, []);
+
+  const handleToggleComparisonMode = useCallback(() => {
+    setComparisonMode(prev => {
+      if (!prev && selectedPlantIndex !== null) {
+        // Start comparison with selected plant
+        setComparisonIndices([selectedPlantIndex]);
+      } else if (prev) {
+        setComparisonIndices([]);
+      }
+      return !prev;
+    });
+  }, [selectedPlantIndex]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full" tabIndex={0}>
@@ -841,15 +1299,32 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
         defaultTarget={DEFAULT_TARGET}
         className="bg-gradient-to-b from-slate-900 via-slate-800 to-emerald-950"
         customControls={
-          <GrowthSliderControl
-            value={globalGrowthModifier}
-            onChange={setGlobalGrowthModifier}
-            isPlaying={isTimeLapsePlaying}
-            onTogglePlay={handleTogglePlay}
-            onReset={handleReset}
-            layout={layout}
-            onLayoutChange={setLayout}
-          />
+          <div className="space-y-3">
+            <GrowthSliderControl
+              value={globalGrowthModifier}
+              onChange={setGlobalGrowthModifier}
+              isPlaying={isTimeLapsePlaying}
+              onTogglePlay={handleTogglePlay}
+              onReset={handleReset}
+              layout={layout}
+              onLayoutChange={setLayout}
+            />
+            <FilterSortControls
+              typeFilter={typeFilter}
+              healthFilter={healthFilter}
+              sortBy={sortBy}
+              sortAsc={sortAsc}
+              onTypeFilterChange={setTypeFilter}
+              onHealthFilterChange={setHealthFilter}
+              onSortChange={setSortBy}
+              onSortDirectionToggle={() => setSortAsc(prev => !prev)}
+              showEnvironment={showEnvironmentControls}
+              onToggleEnvironment={() => setShowEnvironmentControls(prev => !prev)}
+              comparisonMode={comparisonMode}
+              onToggleComparisonMode={handleToggleComparisonMode}
+              comparisonCount={comparisonIndices.length}
+            />
+          </div>
         }
       >
         {({ enableZoom, controlsRef, sceneRef, canvasRef, performanceMode, zoomSpeed }) => (
@@ -872,13 +1347,47 @@ const PlantGrowth3D: React.FC<PlantGrowth3DProps> = ({
               selectedPlantIndex={selectedPlantIndex}
               onPlantClick={handlePlantClick}
               layout={layout}
+              environmentSettings={environmentSettings}
+              comparisonIndices={comparisonIndices}
             />
           </Canvas>
         )}
       </Fullscreen3DWrapper>
       
-      {/* Plant Detail Panel */}
-      {selectedPlantIndex !== null && plants[selectedPlantIndex] && (
+      {/* Environment Controls Overlay */}
+      {showEnvironmentControls && (
+        <EnvironmentControlsOverlay
+          settings={environmentSettings}
+          onChange={setEnvironmentSettings}
+          onClose={() => setShowEnvironmentControls(false)}
+        />
+      )}
+      
+      {/* Comparison Panel */}
+      {comparisonMode && comparisonIndices.length === 2 && (
+        <ComparisonPanel
+          plants={plants}
+          comparisonIndices={comparisonIndices}
+          growthModifier={globalGrowthModifier}
+          onClose={() => {
+            setComparisonMode(false);
+            setComparisonIndices([]);
+          }}
+          onRemove={handleRemoveFromComparison}
+        />
+      )}
+      
+      {/* Comparison mode hint */}
+      {comparisonMode && comparisonIndices.length < 2 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-amber-500/20 backdrop-blur-md border border-amber-500/50 rounded-lg px-4 py-2 z-20">
+          <p className="text-sm text-amber-200">
+            Click {2 - comparisonIndices.length} more plant{comparisonIndices.length === 1 ? '' : 's'} to compare
+          </p>
+        </div>
+      )}
+      
+      {/* Plant Detail Panel - only show when not in comparison mode */}
+      {selectedPlantIndex !== null && plants[selectedPlantIndex] && !comparisonMode && (
         <PlantDetailPanel
           plant={plants[selectedPlantIndex]}
           growthModifier={globalGrowthModifier}
