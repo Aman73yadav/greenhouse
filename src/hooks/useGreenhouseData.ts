@@ -156,7 +156,7 @@ export const useGreenhouseData = () => {
         if (!hourlyMap[hourKey]) {
           hourlyMap[hourKey] = {
             timestamp: new Date(hourKey + ':00:00.000Z'),
-            temperature: 0, humidity: 0, moisture: 0, co2: 0, light: 0,
+            temperature: 0, humidity: 0, moisture: 0, light: 0,
           };
         }
         const val = Number(reading.value);
@@ -164,7 +164,6 @@ export const useGreenhouseData = () => {
           case 'temperature': hourlyMap[hourKey].temperature = val; break;
           case 'humidity': hourlyMap[hourKey].humidity = val; break;
           case 'moisture': hourlyMap[hourKey].moisture = val; break;
-          case 'co2': hourlyMap[hourKey].co2 = val; break;
           case 'light': hourlyMap[hourKey].light = val; break;
         }
       }
