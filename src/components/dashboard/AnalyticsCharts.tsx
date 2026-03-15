@@ -329,9 +329,6 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
                   strokeWidth={2}
                   dot={false}
                 />
-                  strokeWidth={2}
-                  dot={false}
-                />
               </LineChart>
             </ResponsiveContainer>
           </div>
