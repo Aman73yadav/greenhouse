@@ -95,7 +95,6 @@ const DataExport = ({ data }: DataExportProps) => {
       const avgTemp = filteredData.reduce((a, b) => a + b.temperature, 0) / filteredData.length;
       const avgHumidity = filteredData.reduce((a, b) => a + b.humidity, 0) / filteredData.length;
       const avgMoisture = filteredData.reduce((a, b) => a + b.moisture, 0) / filteredData.length;
-      const avgCO2 = filteredData.reduce((a, b) => a + b.co2, 0) / filteredData.length;
       const avgLight = filteredData.reduce((a, b) => a + b.light, 0) / filteredData.length;
       
       doc.setFontSize(11);
