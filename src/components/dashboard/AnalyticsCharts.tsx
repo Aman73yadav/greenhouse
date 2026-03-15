@@ -53,7 +53,6 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
         humidity: Number(d.humidity.toFixed(0)),
         moisture: Number(d.moisture.toFixed(0)),
         light: Number(d.light.toFixed(0)),
-        light: Number(d.light.toFixed(0)),
       }));
   }, [data, timeRange]);
 

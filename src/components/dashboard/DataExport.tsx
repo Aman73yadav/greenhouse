@@ -101,8 +101,7 @@ const DataExport = ({ data }: DataExportProps) => {
       doc.text(`Average Temperature: ${avgTemp.toFixed(1)}°C`, 25, 55);
       doc.text(`Average Humidity: ${avgHumidity.toFixed(1)}%`, 25, 62);
       doc.text(`Average Soil Moisture: ${avgMoisture.toFixed(1)}%`, 25, 69);
-      doc.text(`Average CO2: ${avgCO2.toFixed(0)} ppm`, 25, 76);
-      doc.text(`Average Light: ${avgLight.toFixed(0)} lux`, 25, 83);
+      doc.text(`Average Light: ${avgLight.toFixed(0)}%`, 25, 76);
       
       // Data points section
       doc.setFontSize(14);
