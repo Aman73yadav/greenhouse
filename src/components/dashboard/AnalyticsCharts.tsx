@@ -89,7 +89,7 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
             className="text-sm"
             style={{ color: entry.color }}
           >
-            {entry.name}: {entry.value}{entry.name === 'Temperature' ? '°C' : entry.name === 'CO2' ? ' ppm' : entry.name === 'Light' ? ' lux' : '%'}
+            {entry.name}: {entry.value}{entry.name === 'Temperature' ? '°C' : entry.name === 'Light' ? '%' : '%'}
           </p>
         ))}
       </div>
