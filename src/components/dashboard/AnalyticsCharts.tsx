@@ -302,7 +302,7 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
           </div>
           
           <div className="h-[250px]">
-            <p className="text-sm font-medium mb-4">CO2 & Light Levels</p>
+            <p className="text-sm font-medium mb-4">Light Levels</p>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredData.slice(-24)}>
                 <CartesianGrid 
@@ -316,33 +316,19 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
                   fontSize={12}
                 />
                 <YAxis 
-                  yAxisId="co2"
-                  stroke="hsl(var(--co2))"
-                  fontSize={12}
-                />
-                <YAxis 
-                  yAxisId="light"
-                  orientation="right"
                   stroke="hsl(var(--light))"
                   fontSize={12}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 <Line
-                  yAxisId="co2"
-                  type="monotone"
-                  dataKey="co2"
-                  name="CO2"
-                  stroke="hsl(var(--co2))"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  yAxisId="light"
                   type="monotone"
                   dataKey="light"
                   name="Light"
                   stroke="hsl(var(--light))"
+                  strokeWidth={2}
+                  dot={false}
+                />
                   strokeWidth={2}
                   dot={false}
                 />

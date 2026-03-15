@@ -119,7 +119,7 @@ const DataExport = ({ data }: DataExportProps) => {
       doc.text('Temp', 70, yPos);
       doc.text('Humidity', 95, yPos);
       doc.text('Moisture', 125, yPos);
-      doc.text('CO2', 155, yPos);
+      doc.text('Light', 155, yPos);
       
       doc.setTextColor(0, 0, 0);
       yPos += 10;
