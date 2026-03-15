@@ -137,7 +137,7 @@ const DataExport = ({ data }: DataExportProps) => {
         doc.text(`${d.temperature.toFixed(1)}°C`, 70, yPos);
         doc.text(`${d.humidity.toFixed(0)}%`, 95, yPos);
         doc.text(`${d.moisture.toFixed(0)}%`, 125, yPos);
-        doc.text(`${d.co2.toFixed(0)}`, 155, yPos);
+        doc.text(`${d.light.toFixed(0)}%`, 155, yPos);
         
         yPos += 7;
       });

@@ -52,7 +52,7 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
         temperature: Number(d.temperature.toFixed(1)),
         humidity: Number(d.humidity.toFixed(0)),
         moisture: Number(d.moisture.toFixed(0)),
-        co2: Number(d.co2.toFixed(0)),
+        light: Number(d.light.toFixed(0)),
         light: Number(d.light.toFixed(0)),
       }));
   }, [data, timeRange]);
