@@ -40,13 +40,12 @@ const DataExport = ({ data }: DataExportProps) => {
     try {
       const filteredData = filterDataByRange();
       
-      const headers = ['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Moisture (%)', 'CO2 (ppm)', 'Light (lux)'];
+      const headers = ['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Moisture (%)', 'Light (%)'];
       const rows = filteredData.map(d => [
         new Date(d.timestamp).toISOString(),
         d.temperature.toFixed(2),
         d.humidity.toFixed(2),
         d.moisture.toFixed(2),
-        d.co2.toFixed(2),
         d.light.toFixed(2),
       ]);
       
