@@ -36,8 +36,7 @@ Deno.serve(async (req) => {
         temperature: { sensor_type: 'temperature', unit: '°C' },
         humidity: { sensor_type: 'humidity', unit: '%' },
         soil_moisture: { sensor_type: 'moisture', unit: '%' },
-        light: { sensor_type: 'light', unit: 'lux' },
-        co2: { sensor_type: 'co2', unit: 'ppm' },
+        light: { sensor_type: 'light', unit: '%' },
       };
 
       // Try to find a matching device, or use a default approach
