@@ -23,8 +23,7 @@ const sensorDefaults: Record<string, Omit<SensorData, 'id' | 'value' | 'status' 
   temperature: { type: 'temperature', unit: '°C', min: 0, max: 50, threshold: { low: 18, high: 35 } },
   humidity: { type: 'humidity', unit: '%', min: 0, max: 100, threshold: { low: 40, high: 90 } },
   moisture: { type: 'moisture', unit: '%', min: 0, max: 100, threshold: { low: 20, high: 80 } },
-  co2: { type: 'co2', unit: 'ppm', min: 0, max: 2000, threshold: { low: 300, high: 1000 } },
-  light: { type: 'light', unit: 'lux', min: 0, max: 100000, threshold: { low: 500, high: 50000 } },
+  light: { type: 'light', unit: '%', min: 0, max: 100, threshold: { low: 10, high: 90 } },
 };
 
 export const useGreenhouseData = () => {
