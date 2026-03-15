@@ -68,7 +68,7 @@ export const useGreenhouseData = () => {
   const [devices] = useState<IoTDevice[]>([
     { id: 'dev-001', name: 'Temperature Sensor A1', type: 'sensor', deviceType: 'DHT22', zone: 'Zone A', status: 'online', batteryLevel: 85, lastSeen: new Date(), firmwareVersion: '2.1.4', signalStrength: 92 },
     { id: 'dev-002', name: 'Soil Moisture Sensor A1', type: 'sensor', deviceType: 'Capacitive', zone: 'Zone A', status: 'online', batteryLevel: 72, lastSeen: new Date(), firmwareVersion: '1.8.2', signalStrength: 88 },
-    { id: 'dev-003', name: 'CO2 Sensor B1', type: 'sensor', deviceType: 'MH-Z19', zone: 'Zone B', status: 'online', batteryLevel: 95, lastSeen: new Date(), firmwareVersion: '3.0.1', signalStrength: 95 },
+    { id: 'dev-003', name: 'LDR Light Sensor B1', type: 'sensor', deviceType: 'LDR', zone: 'Zone B', status: 'online', batteryLevel: 95, lastSeen: new Date(), firmwareVersion: '3.0.1', signalStrength: 95 },
     { id: 'dev-004', name: 'Water Pump Controller', type: 'actuator', deviceType: 'Relay Module', zone: 'Zone A', status: 'online', batteryLevel: 100, lastSeen: new Date(), firmwareVersion: '2.0.0', signalStrength: 90 },
     { id: 'dev-005', name: 'LED Grow Light Controller', type: 'actuator', deviceType: 'PWM Controller', zone: 'Zone B', status: 'warning', batteryLevel: 23, lastSeen: new Date(Date.now() - 300000), firmwareVersion: '1.5.0', signalStrength: 65 },
     { id: 'dev-006', name: 'Ventilation Fan Controller', type: 'actuator', deviceType: 'Variable Speed', zone: 'Zone C', status: 'online', batteryLevel: 100, lastSeen: new Date(), firmwareVersion: '2.2.1', signalStrength: 91 },
