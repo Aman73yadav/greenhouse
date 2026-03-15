@@ -40,13 +40,12 @@ const DataExport = ({ data }: DataExportProps) => {
     try {
       const filteredData = filterDataByRange();
       
-      const headers = ['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Moisture (%)', 'CO2 (ppm)', 'Light (lux)'];
+      const headers = ['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Moisture (%)', 'Light (%)'];
       const rows = filteredData.map(d => [
         new Date(d.timestamp).toISOString(),
         d.temperature.toFixed(2),
         d.humidity.toFixed(2),
         d.moisture.toFixed(2),
-        d.co2.toFixed(2),
         d.light.toFixed(2),
       ]);
       
@@ -96,15 +95,13 @@ const DataExport = ({ data }: DataExportProps) => {
       const avgTemp = filteredData.reduce((a, b) => a + b.temperature, 0) / filteredData.length;
       const avgHumidity = filteredData.reduce((a, b) => a + b.humidity, 0) / filteredData.length;
       const avgMoisture = filteredData.reduce((a, b) => a + b.moisture, 0) / filteredData.length;
-      const avgCO2 = filteredData.reduce((a, b) => a + b.co2, 0) / filteredData.length;
       const avgLight = filteredData.reduce((a, b) => a + b.light, 0) / filteredData.length;
       
       doc.setFontSize(11);
       doc.text(`Average Temperature: ${avgTemp.toFixed(1)}°C`, 25, 55);
       doc.text(`Average Humidity: ${avgHumidity.toFixed(1)}%`, 25, 62);
       doc.text(`Average Soil Moisture: ${avgMoisture.toFixed(1)}%`, 25, 69);
-      doc.text(`Average CO2: ${avgCO2.toFixed(0)} ppm`, 25, 76);
-      doc.text(`Average Light: ${avgLight.toFixed(0)} lux`, 25, 83);
+      doc.text(`Average Light: ${avgLight.toFixed(0)}%`, 25, 76);
       
       // Data points section
       doc.setFontSize(14);
@@ -122,7 +119,7 @@ const DataExport = ({ data }: DataExportProps) => {
       doc.text('Temp', 70, yPos);
       doc.text('Humidity', 95, yPos);
       doc.text('Moisture', 125, yPos);
-      doc.text('CO2', 155, yPos);
+      doc.text('Light', 155, yPos);
       
       doc.setTextColor(0, 0, 0);
       yPos += 10;
@@ -139,7 +136,7 @@ const DataExport = ({ data }: DataExportProps) => {
         doc.text(`${d.temperature.toFixed(1)}°C`, 70, yPos);
         doc.text(`${d.humidity.toFixed(0)}%`, 95, yPos);
         doc.text(`${d.moisture.toFixed(0)}%`, 125, yPos);
-        doc.text(`${d.co2.toFixed(0)}`, 155, yPos);
+        doc.text(`${d.light.toFixed(0)}%`, 155, yPos);
         
         yPos += 7;
       });

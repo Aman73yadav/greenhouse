@@ -52,7 +52,6 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
         temperature: Number(d.temperature.toFixed(1)),
         humidity: Number(d.humidity.toFixed(0)),
         moisture: Number(d.moisture.toFixed(0)),
-        co2: Number(d.co2.toFixed(0)),
         light: Number(d.light.toFixed(0)),
       }));
   }, [data, timeRange]);
@@ -90,7 +89,7 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
             className="text-sm"
             style={{ color: entry.color }}
           >
-            {entry.name}: {entry.value}{entry.name === 'Temperature' ? '°C' : entry.name === 'CO2' ? ' ppm' : entry.name === 'Light' ? ' lux' : '%'}
+            {entry.name}: {entry.value}{entry.name === 'Temperature' ? '°C' : entry.name === 'Light' ? '%' : '%'}
           </p>
         ))}
       </div>
@@ -303,7 +302,7 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
           </div>
           
           <div className="h-[250px]">
-            <p className="text-sm font-medium mb-4">CO2 & Light Levels</p>
+            <p className="text-sm font-medium mb-4">Light Levels</p>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredData.slice(-24)}>
                 <CartesianGrid 
@@ -317,29 +316,12 @@ const AnalyticsCharts = ({ data }: AnalyticsChartsProps) => {
                   fontSize={12}
                 />
                 <YAxis 
-                  yAxisId="co2"
-                  stroke="hsl(var(--co2))"
-                  fontSize={12}
-                />
-                <YAxis 
-                  yAxisId="light"
-                  orientation="right"
                   stroke="hsl(var(--light))"
                   fontSize={12}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 <Line
-                  yAxisId="co2"
-                  type="monotone"
-                  dataKey="co2"
-                  name="CO2"
-                  stroke="hsl(var(--co2))"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  yAxisId="light"
                   type="monotone"
                   dataKey="light"
                   name="Light"

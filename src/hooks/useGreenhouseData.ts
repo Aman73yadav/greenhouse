@@ -23,8 +23,7 @@ const sensorDefaults: Record<string, Omit<SensorData, 'id' | 'value' | 'status' 
   temperature: { type: 'temperature', unit: '°C', min: 0, max: 50, threshold: { low: 18, high: 35 } },
   humidity: { type: 'humidity', unit: '%', min: 0, max: 100, threshold: { low: 40, high: 90 } },
   moisture: { type: 'moisture', unit: '%', min: 0, max: 100, threshold: { low: 20, high: 80 } },
-  co2: { type: 'co2', unit: 'ppm', min: 0, max: 2000, threshold: { low: 300, high: 1000 } },
-  light: { type: 'light', unit: 'lux', min: 0, max: 100000, threshold: { low: 500, high: 50000 } },
+  light: { type: 'light', unit: '%', min: 0, max: 100, threshold: { low: 10, high: 90 } },
 };
 
 export const useGreenhouseData = () => {
@@ -32,7 +31,6 @@ export const useGreenhouseData = () => {
     { id: 'temp-1', ...sensorDefaults.temperature, value: 0, status: 'normal', lastUpdated: new Date() },
     { id: 'humidity-1', ...sensorDefaults.humidity, value: 0, status: 'normal', lastUpdated: new Date() },
     { id: 'moisture-1', ...sensorDefaults.moisture, value: 0, status: 'normal', lastUpdated: new Date() },
-    { id: 'co2-1', ...sensorDefaults.co2, value: 0, status: 'normal', lastUpdated: new Date() },
     { id: 'light-1', ...sensorDefaults.light, value: 0, status: 'normal', lastUpdated: new Date() },
   ]);
 
@@ -70,7 +68,7 @@ export const useGreenhouseData = () => {
   const [devices] = useState<IoTDevice[]>([
     { id: 'dev-001', name: 'Temperature Sensor A1', type: 'sensor', deviceType: 'DHT22', zone: 'Zone A', status: 'online', batteryLevel: 85, lastSeen: new Date(), firmwareVersion: '2.1.4', signalStrength: 92 },
     { id: 'dev-002', name: 'Soil Moisture Sensor A1', type: 'sensor', deviceType: 'Capacitive', zone: 'Zone A', status: 'online', batteryLevel: 72, lastSeen: new Date(), firmwareVersion: '1.8.2', signalStrength: 88 },
-    { id: 'dev-003', name: 'CO2 Sensor B1', type: 'sensor', deviceType: 'MH-Z19', zone: 'Zone B', status: 'online', batteryLevel: 95, lastSeen: new Date(), firmwareVersion: '3.0.1', signalStrength: 95 },
+    { id: 'dev-003', name: 'LDR Light Sensor B1', type: 'sensor', deviceType: 'LDR', zone: 'Zone B', status: 'online', batteryLevel: 95, lastSeen: new Date(), firmwareVersion: '3.0.1', signalStrength: 95 },
     { id: 'dev-004', name: 'Water Pump Controller', type: 'actuator', deviceType: 'Relay Module', zone: 'Zone A', status: 'online', batteryLevel: 100, lastSeen: new Date(), firmwareVersion: '2.0.0', signalStrength: 90 },
     { id: 'dev-005', name: 'LED Grow Light Controller', type: 'actuator', deviceType: 'PWM Controller', zone: 'Zone B', status: 'warning', batteryLevel: 23, lastSeen: new Date(Date.now() - 300000), firmwareVersion: '1.5.0', signalStrength: 65 },
     { id: 'dev-006', name: 'Ventilation Fan Controller', type: 'actuator', deviceType: 'Variable Speed', zone: 'Zone C', status: 'online', batteryLevel: 100, lastSeen: new Date(), firmwareVersion: '2.2.1', signalStrength: 91 },
@@ -158,7 +156,7 @@ export const useGreenhouseData = () => {
         if (!hourlyMap[hourKey]) {
           hourlyMap[hourKey] = {
             timestamp: new Date(hourKey + ':00:00.000Z'),
-            temperature: 0, humidity: 0, moisture: 0, co2: 0, light: 0,
+            temperature: 0, humidity: 0, moisture: 0, light: 0,
           };
         }
         const val = Number(reading.value);
@@ -166,7 +164,6 @@ export const useGreenhouseData = () => {
           case 'temperature': hourlyMap[hourKey].temperature = val; break;
           case 'humidity': hourlyMap[hourKey].humidity = val; break;
           case 'moisture': hourlyMap[hourKey].moisture = val; break;
-          case 'co2': hourlyMap[hourKey].co2 = val; break;
           case 'light': hourlyMap[hourKey].light = val; break;
         }
       }
@@ -197,8 +194,7 @@ export const useGreenhouseData = () => {
         temperature: 22 + tempVariation + (Math.random() - 0.5) * 2,
         humidity: 65 + (Math.random() - 0.5) * 10,
         moisture: 70 + (Math.random() - 0.5) * 15,
-        co2: 450 + (Math.random() - 0.5) * 100,
-        light: hourOfDay >= 6 && hourOfDay <= 18 ? 800 + (Math.random() - 0.5) * 400 : 50 + Math.random() * 50,
+        light: hourOfDay >= 6 && hourOfDay <= 18 ? 60 + (Math.random() - 0.5) * 30 : 5 + Math.random() * 5,
       });
     }
     setHistoricalData(data);

@@ -1,6 +1,6 @@
 export interface SensorData {
   id: string;
-  type: 'temperature' | 'humidity' | 'moisture' | 'co2' | 'light';
+  type: 'temperature' | 'humidity' | 'moisture' | 'light';
   value: number;
   unit: string;
   min: number;
@@ -83,6 +83,5 @@ export interface HistoricalData {
   temperature: number;
   humidity: number;
   moisture: number;
-  co2: number;
   light: number;
 }
