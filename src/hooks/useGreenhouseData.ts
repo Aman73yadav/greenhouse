@@ -194,8 +194,7 @@ export const useGreenhouseData = () => {
         temperature: 22 + tempVariation + (Math.random() - 0.5) * 2,
         humidity: 65 + (Math.random() - 0.5) * 10,
         moisture: 70 + (Math.random() - 0.5) * 15,
-        co2: 450 + (Math.random() - 0.5) * 100,
-        light: hourOfDay >= 6 && hourOfDay <= 18 ? 800 + (Math.random() - 0.5) * 400 : 50 + Math.random() * 50,
+        light: hourOfDay >= 6 && hourOfDay <= 18 ? 60 + (Math.random() - 0.5) * 30 : 5 + Math.random() * 5,
       });
     }
     setHistoricalData(data);

@@ -83,6 +83,5 @@ export interface HistoricalData {
   temperature: number;
   humidity: number;
   moisture: number;
-  co2: number;
   light: number;
 }
