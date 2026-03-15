@@ -31,7 +31,6 @@ export const useGreenhouseData = () => {
     { id: 'temp-1', ...sensorDefaults.temperature, value: 0, status: 'normal', lastUpdated: new Date() },
     { id: 'humidity-1', ...sensorDefaults.humidity, value: 0, status: 'normal', lastUpdated: new Date() },
     { id: 'moisture-1', ...sensorDefaults.moisture, value: 0, status: 'normal', lastUpdated: new Date() },
-    { id: 'co2-1', ...sensorDefaults.co2, value: 0, status: 'normal', lastUpdated: new Date() },
     { id: 'light-1', ...sensorDefaults.light, value: 0, status: 'normal', lastUpdated: new Date() },
   ]);
 
