@@ -26,6 +26,7 @@ import ScheduleCalendar from '@/components/dashboard/ScheduleCalendar';
 import DeviceRegistration from '@/components/dashboard/DeviceRegistration';
 import PlantCard from '@/components/dashboard/PlantCard';
 import VirtualLCD from '@/components/dashboard/VirtualLCD';
+import CircuitDiagram from '@/components/dashboard/CircuitDiagram';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -184,6 +185,9 @@ const Index = () => {
               </div>
               <AlertsPanel alerts={alerts} onAcknowledge={acknowledgeAlert} />
             </div>
+
+            {/* Circuit Diagram */}
+            <CircuitDiagram sensorData={sensorData} />
 
             {/* Virtual LCD Display */}
             <VirtualLCD sensorData={sensorData} />
