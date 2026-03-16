@@ -185,6 +185,9 @@ const Index = () => {
               <AlertsPanel alerts={alerts} onAcknowledge={acknowledgeAlert} />
             </div>
 
+            {/* Virtual LCD Display */}
+            <VirtualLCD sensorData={sensorData} />
+
             <AnalyticsCharts data={historicalData} />
           </div>
         )}
