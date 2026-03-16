@@ -62,6 +62,7 @@ const Index = () => {
     updateControl,
     acknowledgeAlert,
     toggleSchedule,
+    updateSensorValue,
   } = useGreenhouseData();
 
   const tempSensor = sensorData.find(s => s.type === 'temperature');

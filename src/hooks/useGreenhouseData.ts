@@ -259,8 +259,17 @@ export const useGreenhouseData = () => {
     ));
   }, []);
 
+  const updateSensorValue = useCallback((type: string, value: number) => {
+    const defaults = sensorDefaults[type];
+    if (!defaults) return;
+    setSensorData(prev => prev.map(sensor => {
+      if (sensor.type !== type) return sensor;
+      return { ...sensor, value, status: getSensorStatus(value, defaults.threshold), lastUpdated: new Date() };
+    }));
+  }, []);
+
   return {
     sensorData, plants, devices, schedules, controls, alerts, historicalData,
-    updateControl, acknowledgeAlert, toggleSchedule,
+    updateControl, acknowledgeAlert, toggleSchedule, updateSensorValue,
   };
 };
