@@ -188,7 +188,7 @@ const Index = () => {
             </div>
 
             {/* Circuit Diagram */}
-            <CircuitDiagram sensorData={sensorData} />
+            <CircuitDiagram sensorData={sensorData} onSensorUpdate={updateSensorValue} />
 
             {/* Virtual LCD Display */}
             <VirtualLCD sensorData={sensorData} />
