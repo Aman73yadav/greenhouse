@@ -62,6 +62,7 @@ const Index = () => {
     updateControl,
     acknowledgeAlert,
     toggleSchedule,
+    updateSensorValue,
   } = useGreenhouseData();
 
   const tempSensor = sensorData.find(s => s.type === 'temperature');
@@ -187,7 +188,7 @@ const Index = () => {
             </div>
 
             {/* Circuit Diagram */}
-            <CircuitDiagram sensorData={sensorData} />
+            <CircuitDiagram sensorData={sensorData} onSensorUpdate={updateSensorValue} />
 
             {/* Virtual LCD Display */}
             <VirtualLCD sensorData={sensorData} />
