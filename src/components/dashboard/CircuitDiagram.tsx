@@ -404,7 +404,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           </g>
 
           {/* Potentiometer */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'10kΩ Potentiometer (Trimmer)\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nPurpose: LCD contrast adjustment\nResistance: 0-10kΩ (variable)\nPins: GND | SIG (Wiper) | VCC\nConnected to: LCD V0 (contrast pin)\nTurn clockwise to increase contrast'}</title>
             <rect x="560" y="235" width="60" height="60" rx="4" fill="#1E88E5" stroke="#1565C0" strokeWidth="1" />
             <circle cx="590" cy="265" r="20" fill="#E3F2FD" stroke="#90CAF9" strokeWidth="1" />
             <circle cx="590" cy="265" r="14" fill="#BBDEFB" />
