@@ -28,6 +28,7 @@ import WokwiEmbed from '@/components/dashboard/WokwiEmbed';
 import PlantCard from '@/components/dashboard/PlantCard';
 import VirtualLCD from '@/components/dashboard/VirtualLCD';
 import CircuitDiagram from '@/components/dashboard/CircuitDiagram';
+import SendTestData from '@/components/dashboard/SendTestData';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
