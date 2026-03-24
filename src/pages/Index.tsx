@@ -24,6 +24,7 @@ import AlertsPanel from '@/components/dashboard/AlertsPanel';
 import DataExport from '@/components/dashboard/DataExport';
 import ScheduleCalendar from '@/components/dashboard/ScheduleCalendar';
 import DeviceRegistration from '@/components/dashboard/DeviceRegistration';
+import WokwiEmbed from '@/components/dashboard/WokwiEmbed';
 import PlantCard from '@/components/dashboard/PlantCard';
 import VirtualLCD from '@/components/dashboard/VirtualLCD';
 import CircuitDiagram from '@/components/dashboard/CircuitDiagram';
