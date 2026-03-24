@@ -337,7 +337,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           </g>
 
           {/* Arduino UNO */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'Arduino UNO R3\n━━━━━━━━━━━━━━━━━━━━━\nMicrocontroller: ATmega328P\nClock: 16 MHz\nFlash: 32 KB | SRAM: 2 KB | EEPROM: 1 KB\nDigital I/O: 14 pins (6 PWM)\nAnalog Inputs: 6 pins (A0-A5)\nOperating Voltage: 5V\nInput Voltage: 7-12V\n━━━━━━━━━━━━━━━━━━━━━\nConnections:\n  D2 → DHT22 Data\n  D13 → LED (via 220Ω)\n  A0 → Soil Moisture (Analog)\n  A1 → LDR Light Sensor (Analog)\n  A4 → LCD SDA (I2C)\n  A5 → LCD SCL (I2C)'}</title>
             <rect x="100" y="310" width="280" height="210" rx="6" fill="url(#boardBlue)" />
             <rect x="108" y="318" width="264" height="194" rx="4" fill="none" stroke="#0D47A1" strokeWidth="0.8" opacity="0.5" />
             <rect x="90" y="355" width="25" height="40" rx="3" fill="#aaa" stroke="#888" strokeWidth="1" />
