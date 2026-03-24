@@ -373,7 +373,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           </g>
 
           {/* Soil Moisture */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'Capacitive Soil Moisture Sensor v1.2\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPin: A0 (Analog Input)\nOutput: 0-1023 → mapped to 0-100%\nVoltage: 3.3V - 5V\nType: Capacitive (corrosion-resistant)\nDry Soil: ~0-20% | Moist: 40-70% | Wet: 80-100%\nAdvantage: No exposed metal probes'}</title>
             <rect x="410" y="350" width="90" height="110" rx="4" fill="#2E7D32" stroke="#1B5E20" strokeWidth="1" />
             <rect x="425" y="460" width="10" height="50" rx="1" fill="#FFD54F" stroke="#F9A825" strokeWidth="0.5" />
             <rect x="475" y="460" width="10" height="50" rx="1" fill="#FFD54F" stroke="#F9A825" strokeWidth="0.5" />
