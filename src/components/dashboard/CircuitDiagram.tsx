@@ -312,7 +312,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           <DataDot path="M 330 520 L 330 570 L 650 570 L 650 400" color="#2196F3" delay={1.5} />
 
           {/* LED + Resistor */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'LED (Red) + 220Ω Resistor\n━━━━━━━━━━━━━━━━━━━━━\nPin: D13 (Digital)\nForward Voltage: 1.8-2.2V\nMax Current: 20mA\nResistor: 220Ω (Red-Red-Brown-Gold)\nPurpose: Status indicator — blinks during simulation'}</title>
             <rect x="60" y="110" width="40" height="10" rx="2" fill="#D4B896" stroke="#8B6914" strokeWidth="0.5" />
             {[0,1,2,3].map(i => <line key={`rb${i}`} x1={68+i*8} y1="110" x2={68+i*8} y2="120" stroke={['#A52A2A','#000','#F00','#FFD700'][i]} strokeWidth="2" />)}
             <ellipse cx="80" cy="145" rx="10" ry="16" fill={ledOn ? '#FF1744' : '#880E4F'} filter={ledOn ? 'url(#glow-red)' : ''} />
