@@ -174,13 +174,17 @@ const Index = () => {
           <div className="space-y-8">
             {/* Sensor Grid */}
             <section>
-              <h3 className="text-xl font-display font-bold mb-4">Live Sensors</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-display font-bold">Live Sensors</h3>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {sensorData.map((sensor) => (
                   <SensorCard key={sensor.id} sensor={sensor} />
                 ))}
               </div>
             </section>
+
+            <SendTestData />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
