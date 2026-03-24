@@ -277,6 +277,7 @@ const Index = () => {
               <IoTDeviceManager devices={devices} />
               <DataExport data={historicalData} />
             </div>
+            <WokwiEmbed />
             <DeviceRegistration onDeviceRegistered={(device) => {
               console.log('Device registered:', device);
             }} />
