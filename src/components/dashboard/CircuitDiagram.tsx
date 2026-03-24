@@ -416,7 +416,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           </g>
 
           {/* LCD */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'LCD 16x2 Display (I2C)\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nI2C Address: 0x27\nDisplay: 16 characters × 2 rows\nInterface: I2C (PCF8574 backpack)\nPins: GND | VCC (5V) | SDA (A4) | SCL (A5)\nBacklight: Blue/Green LED\nContrast: Adjusted via potentiometer\nLine 1: Temperature & Humidity\nLine 2: Soil Moisture & Light Level'}</title>
             <rect x="520" y="370" width="280" height="140" rx="5" fill="url(#lcdBezel)" stroke="#0a3d14" strokeWidth="1.5" />
             {['GND','VCC','SDA','SCL'].map((l,i)=>(
               <g key={l}><rect x={535+i*18} y="375" width="8" height="10" rx="1" fill="#FFD54F"/><text x={539+i*18} y="372" textAnchor="middle" fill="#8BC34A" fontSize="5">{l}</text></g>
