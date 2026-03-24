@@ -324,7 +324,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           </g>
 
           {/* DHT22 */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'DHT22 Temperature & Humidity Sensor\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPin: D2 (Digital)\nTemp Range: -40°C to 80°C (±0.5°C)\nHumidity Range: 0-100% RH (±2-5%)\nSampling: 0.5 Hz (every 2 seconds)\nVoltage: 3.3V - 5V\nProtocol: Single-wire digital\nPins: VCC | DATA | NC | GND'}</title>
             <rect x="150" y="155" width="70" height="75" rx="4" fill="#fff" stroke="#ccc" strokeWidth="1" />
             <rect x="160" y="163" width="50" height="35" rx="2" fill="#E8F5E9" />
             {Array.from({length:5}).map((_,i)=><line key={`dg${i}`} x1={165+i*10} y1="163" x2={165+i*10} y2="198" stroke="#A5D6A7" strokeWidth="0.5"/>)}
