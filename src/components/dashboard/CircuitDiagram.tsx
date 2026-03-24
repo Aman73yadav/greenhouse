@@ -387,7 +387,8 @@ const CircuitDiagram = ({ sensorData, onSensorUpdate }: CircuitDiagramProps) => 
           </g>
 
           {/* Light Sensor */}
-          <g filter="url(#shadow)">
+          <g filter="url(#shadow)" className="cursor-help">
+            <title>{'LDR Light Sensor Module\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nPin: A1 (Analog Input)\nOutput: 0-1023 → mapped to 0-100%\nVoltage: 3.3V - 5V\nType: Photoresistor (LDR)\nDark: High resistance (~1MΩ)\nBright: Low resistance (~1-10kΩ)\nPins: GND | DO (Digital) | AO (Analog) | VCC\nDigital Out: Threshold adjustable via potentiometer'}</title>
             <rect x="470" y="80" width="120" height="140" rx="4" fill="#1565C0" stroke="#0D47A1" strokeWidth="1" />
             <circle cx="530" cy="140" r="22" fill="#1a2a3a" stroke="#37474F" strokeWidth="1.5" />
             <path d="M 518 130 Q 530 148 542 130" stroke="#FFD54F" strokeWidth="1.5" fill="none" />
