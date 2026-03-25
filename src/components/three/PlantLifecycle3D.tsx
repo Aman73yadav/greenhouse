@@ -1,13 +1,67 @@
 import { Suspense, useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Float, Html, Environment } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Float, Html, Environment, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import Fullscreen3DWrapper from './Fullscreen3DWrapper';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, SkipForward, SkipBack, Calendar, Sprout, Apple, Sun } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Play, Pause, SkipForward, SkipBack, Calendar, Sprout, Apple, Sun, CloudRain, Thermometer, Droplets, Lightbulb, LightbulbOff } from 'lucide-react';
 
-// --- Types & Data ---
+// ===================== TYPES =====================
+
+type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry';
+
+interface PlantProfile {
+  name: string;
+  totalDays: number;
+  bestHarvestDay: number;
+  stemColor: string;
+  leafColor: string;
+  leafColorYoung: string;
+  fruitColorUnripe: string;
+  fruitColorRipe: string;
+  flowerColor: string;
+  petalColor: string;
+  maxFruits: number;
+  maxLeaves: number;
+  idealTemp: number;   // °C
+  idealHumidity: number; // %
+  idealLight: number;    // %
+  fruitShape: 'sphere' | 'elongated' | 'flat';
+}
+
+const PLANT_PROFILES: Record<PlantType, PlantProfile> = {
+  tomato: {
+    name: 'Tomato', totalDays: 112, bestHarvestDay: 105, stemColor: '#2d5a27', leafColor: '#38a169', leafColorYoung: '#68d391',
+    fruitColorUnripe: '#48bb78', fruitColorRipe: '#e53e3e', flowerColor: '#FBBF24', petalColor: '#FDE68A',
+    maxFruits: 6, maxLeaves: 12, idealTemp: 25, idealHumidity: 65, idealLight: 80, fruitShape: 'sphere',
+  },
+  pepper: {
+    name: 'Pepper', totalDays: 126, bestHarvestDay: 118, stemColor: '#2E7D32', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#66BB6A', fruitColorRipe: '#FF5722', flowerColor: '#E8F5E9', petalColor: '#C8E6C9',
+    maxFruits: 5, maxLeaves: 10, idealTemp: 28, idealHumidity: 60, idealLight: 85, fruitShape: 'elongated',
+  },
+  lettuce: {
+    name: 'Lettuce', totalDays: 70, bestHarvestDay: 63, stemColor: '#4CAF50', leafColor: '#81C784', leafColorYoung: '#A5D6A7',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#81C784', flowerColor: '#FFF9C4', petalColor: '#FFFDE7',
+    maxFruits: 0, maxLeaves: 18, idealTemp: 18, idealHumidity: 70, idealLight: 60, fruitShape: 'sphere',
+  },
+  strawberry: {
+    name: 'Strawberry', totalDays: 98, bestHarvestDay: 90, stemColor: '#33691E', leafColor: '#558B2F', leafColorYoung: '#7CB342',
+    fruitColorUnripe: '#AED581', fruitColorRipe: '#D32F2F', flowerColor: '#FFFFFF', petalColor: '#F5F5F5',
+    maxFruits: 8, maxLeaves: 9, idealTemp: 22, idealHumidity: 70, idealLight: 75, fruitShape: 'sphere',
+  },
+};
+
+interface EnvironmentState {
+  temperature: number;    // 10-40 °C
+  humidity: number;       // 20-100 %
+  light: number;          // 0-100 %
+  lightsOn: boolean;
+  isRaining: boolean;
+}
 
 interface DayStage {
   day: number;
@@ -18,31 +72,49 @@ interface DayStage {
   heightPercent: number;
   leafCount: number;
   fruitCount: number;
-  fruitRipeness: number; // 0-1
-  harvestScore: number; // 0-100 (best harvest readiness)
+  fruitRipeness: number;
+  harvestScore: number;
 }
 
-const TOTAL_DAYS = 112; // 16 weeks
+// ===================== GROWTH CALCULATION =====================
 
-const getDayStage = (day: number): DayStage => {
-  const week = Math.ceil(day / 7);
-  const progress = day / TOTAL_DAYS;
-
-  if (day <= 7) return { day, week, name: 'Seed', phase: 'seed', description: 'Germination — seed absorbs water', heightPercent: 2 + progress * 30, leafCount: 0, fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
-  if (day <= 21) return { day, week, name: 'Seedling', phase: 'seedling', description: 'First leaves emerge, roots establish', heightPercent: 8 + (day / 21) * 20, leafCount: Math.floor((day - 7) / 3), fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
-  if (day <= 49) return { day, week, name: 'Vegetative', phase: 'vegetative', description: 'Rapid stem & leaf growth', heightPercent: 25 + ((day - 21) / 28) * 35, leafCount: 4 + Math.floor((day - 21) / 4), fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
-  if (day <= 63) return { day, week, name: 'Flowering', phase: 'flowering', description: 'Flowers bloom, pollination begins', heightPercent: 60 + ((day - 49) / 14) * 15, leafCount: 10, fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
-  if (day <= 98) {
-    const fruitProgress = (day - 63) / 35;
-    return { day, week, name: 'Fruiting', phase: 'fruiting', description: 'Fruits develop and ripen', heightPercent: 75 + fruitProgress * 15, leafCount: 10, fruitCount: Math.min(5, Math.floor(fruitProgress * 6)), fruitRipeness: fruitProgress, harvestScore: Math.floor(fruitProgress * 60) };
-  }
-  const harvestProgress = (day - 98) / 14;
-  return { day, week, name: 'Harvest Ready', phase: 'harvest', description: 'Peak ripeness — optimal harvest window!', heightPercent: 90 + harvestProgress * 10, leafCount: 9, fruitCount: 5, fruitRipeness: 1, harvestScore: 60 + Math.floor(Math.sin(harvestProgress * Math.PI) * 40) };
+const computeGrowthSpeed = (env: EnvironmentState, profile: PlantProfile): number => {
+  const tempDiff = Math.abs(env.temperature - profile.idealTemp);
+  const tempFactor = Math.max(0.1, 1 - tempDiff / 30);
+  const humidityDiff = Math.abs(env.humidity - profile.idealHumidity);
+  const humidityFactor = Math.max(0.2, 1 - humidityDiff / 80);
+  const lightLevel = env.lightsOn ? Math.min(100, env.light + 30) : env.light;
+  const lightDiff = Math.abs(lightLevel - profile.idealLight);
+  const lightFactor = Math.max(0.15, 1 - lightDiff / 100);
+  const rainBonus = env.isRaining ? 1.1 : 1;
+  return tempFactor * humidityFactor * lightFactor * rainBonus;
 };
 
-const getBestHarvestDay = (): number => 105; // Day 105 = peak
+const getDayStage = (day: number, profile: PlantProfile): DayStage => {
+  const total = profile.totalDays;
+  const week = Math.ceil(day / 7);
+  const p = day / total; // 0-1 progress
 
-// --- Scene Components ---
+  // Phase boundaries as fractions of total
+  const seedEnd = Math.floor(total * 0.06);
+  const seedlingEnd = Math.floor(total * 0.19);
+  const vegEnd = Math.floor(total * 0.44);
+  const flowerEnd = Math.floor(total * 0.56);
+  const fruitEnd = Math.floor(total * 0.87);
+
+  if (day <= seedEnd) return { day, week, name: 'Seed', phase: 'seed', description: 'Germination — seed absorbs water', heightPercent: 2 + p * 30, leafCount: 0, fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
+  if (day <= seedlingEnd) return { day, week, name: 'Seedling', phase: 'seedling', description: 'First leaves emerge, roots establish', heightPercent: 8 + (day / seedlingEnd) * 20, leafCount: Math.min(profile.maxLeaves, Math.floor((day - seedEnd) / 3)), fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
+  if (day <= vegEnd) return { day, week, name: 'Vegetative', phase: 'vegetative', description: 'Rapid stem & leaf growth', heightPercent: 25 + ((day - seedlingEnd) / (vegEnd - seedlingEnd)) * 35, leafCount: Math.min(profile.maxLeaves, 4 + Math.floor((day - seedlingEnd) / 3)), fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
+  if (day <= flowerEnd) return { day, week, name: 'Flowering', phase: 'flowering', description: 'Flowers bloom, pollination begins', heightPercent: 60 + ((day - vegEnd) / (flowerEnd - vegEnd)) * 15, leafCount: profile.maxLeaves, fruitCount: 0, fruitRipeness: 0, harvestScore: 0 };
+  if (day <= fruitEnd) {
+    const fp = (day - flowerEnd) / (fruitEnd - flowerEnd);
+    return { day, week, name: 'Fruiting', phase: 'fruiting', description: 'Fruits develop and ripen', heightPercent: 75 + fp * 15, leafCount: profile.maxLeaves, fruitCount: Math.min(profile.maxFruits, Math.floor(fp * (profile.maxFruits + 1))), fruitRipeness: fp, harvestScore: Math.floor(fp * 60) };
+  }
+  const hp = (day - fruitEnd) / (total - fruitEnd);
+  return { day, week, name: 'Harvest Ready', phase: 'harvest', description: 'Peak ripeness — optimal harvest window!', heightPercent: 90 + hp * 10, leafCount: profile.maxLeaves - 1, fruitCount: profile.maxFruits, fruitRipeness: 1, harvestScore: 60 + Math.floor(Math.sin(hp * Math.PI) * 40) };
+};
+
+// ===================== 3D SCENE HELPERS =====================
 
 const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | null> }) => {
   const { scene } = useThree();
@@ -53,6 +125,141 @@ const SceneCapture = ({ sceneRef }: { sceneRef: React.RefObject<THREE.Scene | nu
   }, [scene, sceneRef]);
   return null;
 };
+
+// ===================== RAIN PARTICLES =====================
+
+const RainEffect = ({ active, performanceMode }: { active: boolean; performanceMode: boolean }) => {
+  const rainRef = useRef<THREE.Points>(null);
+  const count = performanceMode ? 80 : 200;
+
+  const positions = useMemo(() => {
+    const arr = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      arr[i * 3] = (Math.random() - 0.5) * 8;
+      arr[i * 3 + 1] = Math.random() * 6;
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 8;
+    }
+    return arr;
+  }, [count]);
+
+  useFrame(() => {
+    if (!rainRef.current || !active) return;
+    const pos = rainRef.current.geometry.attributes.position;
+    for (let i = 0; i < count; i++) {
+      let y = (pos.array as Float32Array)[i * 3 + 1];
+      y -= 0.15;
+      if (y < -0.5) y = 5 + Math.random() * 2;
+      (pos.array as Float32Array)[i * 3 + 1] = y;
+    }
+    pos.needsUpdate = true;
+  });
+
+  if (!active) return null;
+
+  return (
+    <points ref={rainRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={0.04} color="#90CAF9" transparent opacity={0.7} />
+    </points>
+  );
+};
+
+// ===================== GROW LIGHTS =====================
+
+const GrowLights = ({ on, performanceMode }: { on: boolean; performanceMode: boolean }) => {
+  const lightsRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (lightsRef.current && on && !performanceMode) {
+      lightsRef.current.children.forEach((child, i) => {
+        const pl = child.children.find((c: any) => c.type === 'PointLight') as THREE.PointLight | undefined;
+        if (pl) pl.intensity = 0.4 + Math.sin(state.clock.elapsedTime * 2 + i) * 0.1;
+      });
+    }
+  });
+
+  return (
+    <group ref={lightsRef} position={[0, 3, 0]}>
+      {[-1.5, 0, 1.5].map((x, i) => (
+        <group key={i} position={[x, 0, 0]}>
+          {/* Housing */}
+          <mesh>
+            <boxGeometry args={[0.8, 0.08, 0.3]} />
+            <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
+          </mesh>
+          {/* Panel */}
+          <mesh position={[0, -0.05, 0]}>
+            <boxGeometry args={[0.7, 0.02, 0.25]} />
+            <meshStandardMaterial
+              color={on ? '#FF69B4' : '#555'}
+              emissive={on ? '#FF1493' : '#000000'}
+              emissiveIntensity={on ? (performanceMode ? 0.4 : 0.8) : 0}
+            />
+          </mesh>
+          {on && !performanceMode && (
+            <pointLight position={[0, -0.3, 0]} intensity={0.5} color="#FF69B4" distance={4} />
+          )}
+        </group>
+      ))}
+      {/* Bar */}
+      <mesh position={[0, 0.06, 0]}>
+        <boxGeometry args={[5, 0.04, 0.04]} />
+        <meshStandardMaterial color="#404040" metalness={0.9} roughness={0.1} />
+      </mesh>
+    </group>
+  );
+};
+
+// ===================== SENSOR HUD (in-scene) =====================
+
+const SensorHUD = ({ env, profile }: { env: EnvironmentState; profile: PlantProfile }) => {
+  const speed = computeGrowthSpeed(env, profile);
+  const lightEff = env.lightsOn ? Math.min(100, env.light + 30) : env.light;
+
+  return (
+    <Html position={[2.8, 2.2, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+      <div className="bg-background/90 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-3 shadow-xl space-y-2 min-w-[150px]">
+        <div className="text-xs font-bold text-foreground border-b border-border/30 pb-1 mb-1">Sensors</div>
+        <div className="flex items-center gap-2 text-xs">
+          <Thermometer className="w-3.5 h-3.5 text-destructive" />
+          <span className="text-muted-foreground">Temp</span>
+          <span className="ml-auto font-bold text-foreground">{env.temperature}°C</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <Droplets className="w-3.5 h-3.5 text-blue-400" />
+          <span className="text-muted-foreground">Humidity</span>
+          <span className="ml-auto font-bold text-foreground">{env.humidity}%</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <Sun className="w-3.5 h-3.5 text-yellow-400" />
+          <span className="text-muted-foreground">Light</span>
+          <span className="ml-auto font-bold text-foreground">{lightEff}%</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          {env.lightsOn ? <Lightbulb className="w-3.5 h-3.5 text-pink-400" /> : <LightbulbOff className="w-3.5 h-3.5 text-muted-foreground" />}
+          <span className="text-muted-foreground">Grow Light</span>
+          <span className="ml-auto font-bold text-foreground">{env.lightsOn ? 'ON' : 'OFF'}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <CloudRain className="w-3.5 h-3.5 text-blue-300" />
+          <span className="text-muted-foreground">Rain</span>
+          <span className="ml-auto font-bold text-foreground">{env.isRaining ? 'Yes' : 'No'}</span>
+        </div>
+        <div className="border-t border-border/30 pt-1 mt-1 flex items-center gap-2 text-xs">
+          <Sprout className="w-3.5 h-3.5 text-primary" />
+          <span className="text-muted-foreground">Speed</span>
+          <span className={`ml-auto font-bold ${speed > 0.7 ? 'text-primary' : speed > 0.4 ? 'text-yellow-500' : 'text-destructive'}`}>
+            {(speed * 100).toFixed(0)}%
+          </span>
+        </div>
+      </div>
+    </Html>
+  );
+};
+
+// ===================== POT =====================
 
 const Pot = () => (
   <group position={[0, -0.25, 0]}>
@@ -71,42 +278,57 @@ const Pot = () => (
   </group>
 );
 
+// ===================== PLANT MODEL =====================
+
 interface PlantModelProps {
   stage: DayStage;
+  profile: PlantProfile;
   performanceMode: boolean;
+  env: EnvironmentState;
 }
 
-const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
+const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) => {
   const plantRef = useRef<THREE.Group>(null);
   const leavesRef = useRef<THREE.Group>(null);
-
   const stemHeight = (stage.heightPercent / 100) * 2.5;
   const isHarvest = stage.phase === 'harvest';
 
+  // Wilting effect when conditions are bad
+  const speed = computeGrowthSpeed(env, profile);
+  const wiltAngle = speed < 0.3 ? 0.15 : 0;
+
   useFrame((state) => {
     if (plantRef.current && !performanceMode) {
-      plantRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.4) * 0.02;
+      plantRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.4) * 0.02 + wiltAngle;
     }
     if (leavesRef.current && !performanceMode) {
       leavesRef.current.children.forEach((child, i) => {
-        child.rotation.z = Math.sin(state.clock.elapsedTime * 0.3 + i * 0.7) * 0.06;
+        child.rotation.z = Math.sin(state.clock.elapsedTime * 0.3 + i * 0.7) * 0.06 + wiltAngle * 0.5;
       });
     }
   });
 
   const fruitColor = useMemo(() => {
     return new THREE.Color().lerpColors(
-      new THREE.Color('#48bb78'),
-      new THREE.Color('#e53e3e'),
+      new THREE.Color(profile.fruitColorUnripe),
+      new THREE.Color(profile.fruitColorRipe),
       stage.fruitRipeness
     );
-  }, [stage.fruitRipeness]);
+  }, [stage.fruitRipeness, profile]);
+
+  // Leaf color adjusts with light
+  const effectiveLeafColor = useMemo(() => {
+    const base = new THREE.Color(profile.leafColor);
+    const lightLevel = env.lightsOn ? Math.min(100, env.light + 30) : env.light;
+    if (lightLevel < 30) return base.clone().multiplyScalar(0.6).getStyle();
+    return base.getStyle();
+  }, [profile.leafColor, env.light, env.lightsOn]);
 
   return (
     <group ref={plantRef}>
       <Pot />
 
-      {/* Seed visible */}
+      {/* Seed */}
       {stage.phase === 'seed' && (
         <mesh position={[0, 0.05, 0]}>
           <sphereGeometry args={[0.06, 12, 12]} />
@@ -115,10 +337,10 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
       )}
 
       {/* Sprout */}
-      {stage.phase === 'seed' && stage.day > 4 && (
+      {stage.phase === 'seed' && stage.day > Math.floor(profile.totalDays * 0.03) && (
         <mesh position={[0, 0.12, 0]}>
           <cylinderGeometry args={[0.01, 0.015, 0.12, 6]} />
-          <meshStandardMaterial color="#68d391" />
+          <meshStandardMaterial color={profile.leafColorYoung} />
         </mesh>
       )}
 
@@ -131,7 +353,7 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
             return (
               <mesh key={i} position={[0, i * segH + segH / 2, 0]}>
                 <cylinderGeometry args={[Math.max(0.01, thick * 0.8), Math.max(0.012, thick), segH, 8]} />
-                <meshStandardMaterial color="#2d5a27" roughness={0.7} />
+                <meshStandardMaterial color={profile.stemColor} roughness={0.7} />
               </mesh>
             );
           })}
@@ -145,14 +367,33 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
             const angle = (i * 137.5 * Math.PI) / 180;
             const h = 0.15 + (i / stage.leafCount) * stemHeight * 0.85;
             const size = 0.1 + (i % 3) * 0.03;
+            const isYoung = i > stage.leafCount - 3;
             return (
               <Float key={i} speed={performanceMode ? 0 : 1.2} rotationIntensity={performanceMode ? 0 : 0.08} floatIntensity={0}>
                 <group position={[0, Math.min(h, stemHeight * 0.95), 0]} rotation={[0.35, angle, Math.PI / 5]}>
                   <mesh position={[0.15, 0, 0]}>
                     <sphereGeometry args={[size, 6, 4]} />
-                    <meshStandardMaterial color={i > stage.leafCount - 3 ? '#68d391' : '#38a169'} roughness={0.5} side={THREE.DoubleSide} />
+                    <meshStandardMaterial color={isYoung ? profile.leafColorYoung : effectiveLeafColor} roughness={0.5} side={THREE.DoubleSide} />
                   </mesh>
                 </group>
+              </Float>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Lettuce head (special) */}
+      {profile.name === 'Lettuce' && stage.phase !== 'seed' && stage.phase !== 'seedling' && (
+        <group position={[0, 0.1, 0]}>
+          {[...Array(Math.min(15, Math.floor(stage.heightPercent / 5)))].map((_, i) => {
+            const angle = (i / 15) * Math.PI * 2 + i * 0.5;
+            const tilt = 0.1 + i * 0.05;
+            return (
+              <Float key={i} speed={performanceMode ? 0 : 1} rotationIntensity={performanceMode ? 0 : 0.04} floatIntensity={0}>
+                <mesh position={[Math.cos(angle) * 0.07 * (i / 10), i * 0.022, Math.sin(angle) * 0.07 * (i / 10)]} rotation={[tilt, angle, 0]}>
+                  <planeGeometry args={[0.12 + i * 0.008, 0.16 + i * 0.01]} />
+                  <meshStandardMaterial color={i % 3 === 0 ? profile.leafColor : profile.leafColorYoung} roughness={0.6} side={THREE.DoubleSide} />
+                </mesh>
               </Float>
             );
           })}
@@ -166,9 +407,8 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
             <Float key={i} speed={2} floatIntensity={0.1}>
               <mesh position={[Math.cos(i * 1.6) * 0.2, 0.05, Math.sin(i * 1.6) * 0.2]}>
                 <sphereGeometry args={[0.04, 10, 10]} />
-                <meshStandardMaterial color="#FBBF24" emissive="#F59E0B" emissiveIntensity={0.3} />
+                <meshStandardMaterial color={profile.flowerColor} emissive={profile.flowerColor} emissiveIntensity={0.2} />
               </mesh>
-              {/* Petals */}
               {[0, 1, 2, 3, 4].map((p) => (
                 <mesh key={p} position={[
                   Math.cos(i * 1.6) * 0.2 + Math.cos(p * 1.26) * 0.05,
@@ -176,7 +416,7 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
                   Math.sin(i * 1.6) * 0.2 + Math.sin(p * 1.26) * 0.05
                 ]}>
                   <sphereGeometry args={[0.02, 6, 6]} />
-                  <meshStandardMaterial color="#FDE68A" />
+                  <meshStandardMaterial color={profile.petalColor} />
                 </mesh>
               ))}
             </Float>
@@ -189,7 +429,10 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
         <group position={[0, stemHeight * 0.65, 0]}>
           {[...Array(stage.fruitCount)].map((_, i) => {
             const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.4;
-            const fruitSize = 0.05 + stage.fruitRipeness * 0.06;
+            const baseSize = 0.05 + stage.fruitRipeness * 0.06;
+            const fruitGeo = profile.fruitShape === 'elongated'
+              ? [baseSize * 0.7, baseSize * 0.7, baseSize * 1.4] as [number, number, number]
+              : undefined;
             return (
               <group key={i} position={[Math.cos(a) * 0.22, -0.05 - i * 0.1, Math.sin(a) * 0.22]}>
                 <mesh rotation={[0.3, 0, 0]}>
@@ -198,7 +441,11 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
                 </mesh>
                 <Float speed={performanceMode ? 0 : 1.5} floatIntensity={performanceMode ? 0 : 0.04}>
                   <mesh position={[0, -0.05, 0]}>
-                    <sphereGeometry args={[fruitSize, 14, 14]} />
+                    {profile.fruitShape === 'elongated' ? (
+                      <capsuleGeometry args={[baseSize * 0.5, baseSize * 0.8, 6, 12]} />
+                    ) : (
+                      <sphereGeometry args={[baseSize, 14, 14]} />
+                    )}
                     <meshStandardMaterial color={fruitColor} roughness={0.3} metalness={0.1} />
                   </mesh>
                 </Float>
@@ -224,19 +471,27 @@ const PlantModel = ({ stage, performanceMode }: PlantModelProps) => {
   );
 };
 
-// Timeline plants showing all stages side by side
-const TimelinePlants = ({ currentDay, performanceMode }: { currentDay: number; performanceMode: boolean }) => {
-  const timelineStages = [7, 14, 35, 56, 84, 105];
+// ===================== TIMELINE =====================
+
+const TimelinePlants = ({ currentDay, profile, performanceMode, env }: { currentDay: number; profile: PlantProfile; performanceMode: boolean; env: EnvironmentState }) => {
+  const total = profile.totalDays;
+  const timelineStages = [
+    Math.floor(total * 0.05),
+    Math.floor(total * 0.12),
+    Math.floor(total * 0.32),
+    Math.floor(total * 0.5),
+    Math.floor(total * 0.75),
+    profile.bestHarvestDay
+  ];
   const labels = ['Seed', 'Seedling', 'Vegetative', 'Flowering', 'Fruiting', 'Harvest'];
 
   return (
     <group position={[-6, 0, 0]}>
       {timelineStages.map((day, i) => {
-        const stage = getDayStage(day);
+        const stage = getDayStage(day, profile);
         const isActive = currentDay >= day && (i === timelineStages.length - 1 || currentDay < timelineStages[i + 1]);
         return (
           <group key={i} position={[i * 2.5, 0, 0]}>
-            {/* Highlight ring for active stage */}
             {isActive && (
               <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[0.55, 0.65, 32]} />
@@ -244,7 +499,7 @@ const TimelinePlants = ({ currentDay, performanceMode }: { currentDay: number; p
               </mesh>
             )}
             <group scale={0.6}>
-              <PlantModel stage={stage} performanceMode={performanceMode} />
+              <PlantModel stage={stage} profile={profile} performanceMode={performanceMode} env={env} />
             </group>
             <Html position={[0, -0.7, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
               <div className={`text-xs font-medium px-2 py-1 rounded ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
@@ -258,42 +513,59 @@ const TimelinePlants = ({ currentDay, performanceMode }: { currentDay: number; p
   );
 };
 
-// Ground
-const Ground = () => (
+// ===================== GROUND =====================
+
+const Ground = ({ isRaining }: { isRaining: boolean }) => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
     <planeGeometry args={[30, 20]} />
-    <meshStandardMaterial color="#1a472a" roughness={0.9} />
+    <meshStandardMaterial color={isRaining ? '#143d1f' : '#1a472a'} roughness={0.9} />
   </mesh>
 );
 
-// --- Main Scene ---
+// ===================== SCENE =====================
 
-const LifecycleScene = ({ 
-  currentDay, controlsRef, enableZoom, performanceMode, zoomSpeed, viewMode 
-}: { 
+const LifecycleScene = ({
+  currentDay, controlsRef, enableZoom, performanceMode, zoomSpeed, viewMode, profile, env
+}: {
   currentDay: number;
   controlsRef: React.RefObject<any>;
   enableZoom: boolean;
   performanceMode: boolean;
   zoomSpeed: number;
   viewMode: 'single' | 'timeline';
+  profile: PlantProfile;
+  env: EnvironmentState;
 }) => {
-  const stage = getDayStage(currentDay);
+  const stage = getDayStage(currentDay, profile);
+  const lightLevel = env.lightsOn ? Math.min(100, env.light + 30) : env.light;
+  const ambientIntensity = performanceMode ? 0.5 : 0.15 + (lightLevel / 100) * 0.35;
+  const dirIntensity = performanceMode ? 0.6 : 0.3 + (lightLevel / 100) * 0.6;
+  const tempFactor = (env.temperature - 10) / 30;
+  const dirColor = tempFactor > 0.6 ? '#FFE0B2' : tempFactor < 0.3 ? '#E3F2FD' : '#FFF8E1';
 
   return (
     <>
-      <ambientLight intensity={performanceMode ? 0.6 : 0.35} />
-      <directionalLight position={[8, 12, 6]} intensity={performanceMode ? 0.7 : 0.9} castShadow={!performanceMode} color="#FFF8E1" />
-      {!performanceMode && <pointLight position={[-5, 5, -5]} intensity={0.25} color="#FFE4B5" />}
+      <ambientLight intensity={ambientIntensity} />
+      <directionalLight position={[8, 12, 6]} intensity={dirIntensity} castShadow={!performanceMode} color={dirColor} />
+      {!performanceMode && <pointLight position={[-5, 5, -5]} intensity={0.15 * (lightLevel / 100)} color="#FFE4B5" />}
 
       {viewMode === 'single' ? (
-        <PlantModel stage={stage} performanceMode={performanceMode} />
+        <PlantModel stage={stage} profile={profile} performanceMode={performanceMode} env={env} />
       ) : (
-        <TimelinePlants currentDay={currentDay} performanceMode={performanceMode} />
+        <TimelinePlants currentDay={currentDay} profile={profile} performanceMode={performanceMode} env={env} />
       )}
 
-      <Ground />
-      {!performanceMode && <Environment preset="sunset" />}
+      <GrowLights on={env.lightsOn} performanceMode={performanceMode} />
+      <RainEffect active={env.isRaining} performanceMode={performanceMode} />
+      {viewMode === 'single' && <SensorHUD env={env} profile={profile} />}
+
+      {/* Rain mist sparkles */}
+      {env.isRaining && !performanceMode && (
+        <Sparkles count={40} scale={[6, 1, 6]} position={[0, 0, 0]} size={1} speed={0.4} opacity={0.3} color="#90CAF9" />
+      )}
+
+      <Ground isRaining={env.isRaining} />
+      {!performanceMode && <Environment preset={lightLevel > 50 ? 'sunset' : 'night'} />}
 
       <OrbitControls
         ref={controlsRef}
@@ -310,34 +582,50 @@ const LifecycleScene = ({
   );
 };
 
-// --- Main Component ---
+// ===================== MAIN COMPONENT =====================
 
 const DEFAULT_CAMERA_SINGLE: [number, number, number] = [4, 3, 4];
 const DEFAULT_CAMERA_TIMELINE: [number, number, number] = [0, 5, 12];
 const DEFAULT_TARGET: [number, number, number] = [0, 0.8, 0];
 
 const PlantLifecycle3D = () => {
+  const [plantType, setPlantType] = useState<PlantType>('tomato');
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'timeline'>('single');
+  const [env, setEnv] = useState<EnvironmentState>({
+    temperature: 25,
+    humidity: 65,
+    light: 75,
+    lightsOn: true,
+    isRaining: false,
+  });
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stage = getDayStage(currentDay);
-  const bestDay = getBestHarvestDay();
-  const isHarvestWindow = currentDay >= 98;
+  const profile = PLANT_PROFILES[plantType];
+  const stage = getDayStage(currentDay, profile);
+  const bestDay = profile.bestHarvestDay;
+  const isHarvestWindow = currentDay >= Math.floor(profile.totalDays * 0.87);
+  const growthSpeed = computeGrowthSpeed(env, profile);
 
-  // Auto-play
+  // Clamp currentDay when switching plant type
+  useEffect(() => {
+    if (currentDay > profile.totalDays) setCurrentDay(profile.totalDays);
+  }, [plantType, profile.totalDays, currentDay]);
+
+  // Auto-play with speed affected by environment
   useEffect(() => {
     if (isPlaying) {
+      const interval = Math.max(50, 200 / Math.max(0.2, growthSpeed));
       playIntervalRef.current = setInterval(() => {
         setCurrentDay(prev => {
-          if (prev >= TOTAL_DAYS) { setIsPlaying(false); return TOTAL_DAYS; }
+          if (prev >= profile.totalDays) { setIsPlaying(false); return profile.totalDays; }
           return prev + 1;
         });
-      }, 200);
+      }, interval);
     }
     return () => { if (playIntervalRef.current) clearInterval(playIntervalRef.current); };
-  }, [isPlaying]);
+  }, [isPlaying, growthSpeed, profile.totalDays]);
 
   const jumpToHarvest = useCallback(() => { setCurrentDay(bestDay); setIsPlaying(false); }, [bestDay]);
 
@@ -349,6 +637,8 @@ const PlantLifecycle3D = () => {
     fruiting: 'hsl(16, 85%, 54%)',
     harvest: 'hsl(0, 72%, 51%)',
   };
+
+  const totalDays = profile.totalDays;
 
   return (
     <Fullscreen3DWrapper
@@ -371,12 +661,14 @@ const PlantLifecycle3D = () => {
                 performanceMode={performanceMode}
                 zoomSpeed={zoomSpeed}
                 viewMode={viewMode}
+                profile={profile}
+                env={env}
               />
             </Suspense>
           </Canvas>
 
           {/* Controls overlay */}
-          <div className="absolute bottom-4 left-4 right-4 z-10 space-y-3">
+          <div className="absolute bottom-4 left-4 right-4 z-10 space-y-2 max-h-[60%] overflow-y-auto">
             {/* Harvest indicator */}
             {isHarvestWindow && (
               <div className="glass-card p-3 border-2 border-primary/50 animate-pulse">
@@ -394,102 +686,145 @@ const PlantLifecycle3D = () => {
 
             {/* Main control panel */}
             <div className="glass-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2">
+              {/* Plant selector + stage info */}
+              <div className="flex items-start justify-between mb-3 gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Select value={plantType} onValueChange={(v) => { setPlantType(v as PlantType); setCurrentDay(1); setIsPlaying(false); }}>
+                      <SelectTrigger className="w-[140px] h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tomato">🍅 Tomato</SelectItem>
+                        <SelectItem value="pepper">🌶️ Pepper</SelectItem>
+                        <SelectItem value="lettuce">🥬 Lettuce</SelectItem>
+                        <SelectItem value="strawberry">🍓 Strawberry</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: phaseColors[stage.phase] }} />
-                    <span className="text-lg font-display font-bold text-foreground">{stage.name}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{stage.phase}</span>
+                    <span className="text-sm font-display font-bold text-foreground">{stage.name}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-0.5">{stage.description}</p>
+                  <p className="text-xs text-muted-foreground">{stage.description}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-gradient-primary">Day {currentDay}</div>
-                  <div className="text-xs text-muted-foreground">Week {stage.week} / 16</div>
+                  <div className="text-xs text-muted-foreground">Week {stage.week} / {Math.ceil(totalDays / 7)} • Speed {(growthSpeed * 100).toFixed(0)}%</div>
                 </div>
               </div>
 
-              {/* Stats row */}
-              <div className="grid grid-cols-4 gap-3 mb-3">
-                <div className="text-center p-2 rounded-lg bg-muted/50">
-                  <Sprout className="w-4 h-4 mx-auto text-primary mb-1" />
-                  <div className="text-xs text-muted-foreground">Growth</div>
-                  <div className="text-sm font-bold">{stage.heightPercent.toFixed(0)}%</div>
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                <div className="text-center p-1.5 rounded-lg bg-muted/50">
+                  <Sprout className="w-3.5 h-3.5 mx-auto text-primary mb-0.5" />
+                  <div className="text-[10px] text-muted-foreground">Growth</div>
+                  <div className="text-xs font-bold">{stage.heightPercent.toFixed(0)}%</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-muted/50">
-                  <Sun className="w-4 h-4 mx-auto text-yellow-500 mb-1" />
-                  <div className="text-xs text-muted-foreground">Leaves</div>
-                  <div className="text-sm font-bold">{stage.leafCount}</div>
+                <div className="text-center p-1.5 rounded-lg bg-muted/50">
+                  <Sun className="w-3.5 h-3.5 mx-auto text-yellow-500 mb-0.5" />
+                  <div className="text-[10px] text-muted-foreground">Leaves</div>
+                  <div className="text-xs font-bold">{stage.leafCount}</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-muted/50">
-                  <Apple className="w-4 h-4 mx-auto text-destructive mb-1" />
-                  <div className="text-xs text-muted-foreground">Fruits</div>
-                  <div className="text-sm font-bold">{stage.fruitCount}</div>
+                <div className="text-center p-1.5 rounded-lg bg-muted/50">
+                  <Apple className="w-3.5 h-3.5 mx-auto text-destructive mb-0.5" />
+                  <div className="text-[10px] text-muted-foreground">Fruits</div>
+                  <div className="text-xs font-bold">{stage.fruitCount}</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-muted/50">
-                  <Calendar className="w-4 h-4 mx-auto text-accent-foreground mb-1" />
-                  <div className="text-xs text-muted-foreground">Harvest</div>
-                  <div className="text-sm font-bold">{stage.harvestScore}%</div>
+                <div className="text-center p-1.5 rounded-lg bg-muted/50">
+                  <Calendar className="w-3.5 h-3.5 mx-auto text-accent-foreground mb-0.5" />
+                  <div className="text-[10px] text-muted-foreground">Harvest</div>
+                  <div className="text-xs font-bold">{stage.harvestScore}%</div>
                 </div>
               </div>
 
               {/* Day slider */}
-              <div className="flex items-center gap-3 mb-3">
-                <Button size="sm" variant="outline" onClick={() => setCurrentDay(Math.max(1, currentDay - 1))} disabled={currentDay <= 1}>
-                  <SkipBack className="w-4 h-4" />
+              <div className="flex items-center gap-2 mb-2">
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => setCurrentDay(Math.max(1, currentDay - 1))} disabled={currentDay <= 1}>
+                  <SkipBack className="w-3.5 h-3.5" />
                 </Button>
-                <Button size="sm" variant={isPlaying ? 'destructive' : 'default'} onClick={() => setIsPlaying(!isPlaying)}>
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                <Button size="sm" variant={isPlaying ? 'destructive' : 'default'} className="h-7 w-7 p-0" onClick={() => setIsPlaying(!isPlaying)}>
+                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setCurrentDay(Math.min(TOTAL_DAYS, currentDay + 1))} disabled={currentDay >= TOTAL_DAYS}>
-                  <SkipForward className="w-4 h-4" />
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => setCurrentDay(Math.min(totalDays, currentDay + 1))} disabled={currentDay >= totalDays}>
+                  <SkipForward className="w-3.5 h-3.5" />
                 </Button>
                 <div className="flex-1">
-                  <Slider
-                    value={[currentDay]}
-                    onValueChange={([val]) => { setCurrentDay(val); setIsPlaying(false); }}
-                    min={1}
-                    max={TOTAL_DAYS}
-                    step={1}
-                  />
+                  <Slider value={[currentDay]} onValueChange={([val]) => { setCurrentDay(val); setIsPlaying(false); }} min={1} max={totalDays} step={1} />
                 </div>
-                <Button size="sm" variant="secondary" onClick={jumpToHarvest} title="Jump to best harvest day">
-                  <Apple className="w-4 h-4 mr-1" /> Best Day
+                <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={jumpToHarvest}>
+                  <Apple className="w-3 h-3 mr-1" /> Best
                 </Button>
               </div>
 
-              {/* Timeline progress bar */}
-              <div className="relative h-3 rounded-full overflow-hidden bg-muted">
-                {/* Phase segments */}
+              {/* Timeline bar */}
+              <div className="relative h-2.5 rounded-full overflow-hidden bg-muted mb-3">
                 <div className="absolute inset-0 flex">
                   {[
-                    { end: 7, color: phaseColors.seed },
-                    { end: 21, color: phaseColors.seedling },
-                    { end: 49, color: phaseColors.vegetative },
-                    { end: 63, color: phaseColors.flowering },
-                    { end: 98, color: phaseColors.fruiting },
-                    { end: 112, color: phaseColors.harvest },
+                    { end: Math.floor(totalDays * 0.06), color: phaseColors.seed },
+                    { end: Math.floor(totalDays * 0.19), color: phaseColors.seedling },
+                    { end: Math.floor(totalDays * 0.44), color: phaseColors.vegetative },
+                    { end: Math.floor(totalDays * 0.56), color: phaseColors.flowering },
+                    { end: Math.floor(totalDays * 0.87), color: phaseColors.fruiting },
+                    { end: totalDays, color: phaseColors.harvest },
                   ].map((seg, i, arr) => {
                     const start = i === 0 ? 0 : arr[i - 1].end;
-                    return (
-                      <div key={i} style={{ width: `${((seg.end - start) / TOTAL_DAYS) * 100}%`, backgroundColor: seg.color, opacity: currentDay >= start ? 0.8 : 0.2 }} />
-                    );
+                    return <div key={i} style={{ width: `${((seg.end - start) / totalDays) * 100}%`, backgroundColor: seg.color, opacity: currentDay >= start ? 0.8 : 0.2 }} />;
                   })}
                 </div>
-                {/* Current position marker */}
-                <div className="absolute top-0 bottom-0 w-0.5 bg-foreground z-10" style={{ left: `${(currentDay / TOTAL_DAYS) * 100}%` }} />
-                {/* Best harvest marker */}
-                <div className="absolute top-0 bottom-0 w-1 bg-primary z-10 rounded-full" style={{ left: `${(bestDay / TOTAL_DAYS) * 100}%` }} title={`Best harvest: Day ${bestDay}`} />
+                <div className="absolute top-0 bottom-0 w-0.5 bg-foreground z-10" style={{ left: `${(currentDay / totalDays) * 100}%` }} />
+                <div className="absolute top-0 bottom-0 w-1 bg-primary z-10 rounded-full" style={{ left: `${(bestDay / totalDays) * 100}%` }} title={`Best harvest: Day ${bestDay}`} />
               </div>
 
-              {/* View mode toggle */}
-              <div className="flex items-center gap-2 mt-3">
-                <Button size="sm" variant={viewMode === 'single' ? 'default' : 'outline'} onClick={() => setViewMode('single')} className="text-xs">
-                  🌱 Single Plant
-                </Button>
-                <Button size="sm" variant={viewMode === 'timeline' ? 'default' : 'outline'} onClick={() => setViewMode('timeline')} className="text-xs">
-                  📊 All Stages
-                </Button>
+              {/* Environment controls + view mode */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Left: environment */}
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Environment</div>
+                  <div className="flex items-center gap-2">
+                    <Thermometer className="w-3 h-3 text-destructive" />
+                    <span className="text-[10px] text-muted-foreground w-8">{env.temperature}°C</span>
+                    <Slider value={[env.temperature]} onValueChange={([v]) => setEnv(prev => ({ ...prev, temperature: v }))} min={10} max={40} step={1} className="flex-1" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Droplets className="w-3 h-3 text-blue-400" />
+                    <span className="text-[10px] text-muted-foreground w-8">{env.humidity}%</span>
+                    <Slider value={[env.humidity]} onValueChange={([v]) => setEnv(prev => ({ ...prev, humidity: v }))} min={20} max={100} step={1} className="flex-1" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sun className="w-3 h-3 text-yellow-400" />
+                    <span className="text-[10px] text-muted-foreground w-8">{env.light}%</span>
+                    <Slider value={[env.light]} onValueChange={([v]) => setEnv(prev => ({ ...prev, light: v }))} min={0} max={100} step={1} className="flex-1" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      {env.lightsOn ? <Lightbulb className="w-3 h-3 text-pink-400" /> : <LightbulbOff className="w-3 h-3 text-muted-foreground" />}
+                      <span className="text-[10px] text-muted-foreground">Lights</span>
+                      <Switch checked={env.lightsOn} onCheckedChange={(v) => setEnv(prev => ({ ...prev, lightsOn: v }))} className="scale-75" />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CloudRain className="w-3 h-3 text-blue-300" />
+                      <span className="text-[10px] text-muted-foreground">Rain</span>
+                      <Switch checked={env.isRaining} onCheckedChange={(v) => setEnv(prev => ({ ...prev, isRaining: v }))} className="scale-75" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: view mode + info */}
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">View</div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant={viewMode === 'single' ? 'default' : 'outline'} onClick={() => setViewMode('single')} className="text-[10px] h-7 flex-1">
+                      🌱 Plant
+                    </Button>
+                    <Button size="sm" variant={viewMode === 'timeline' ? 'default' : 'outline'} onClick={() => setViewMode('timeline')} className="text-[10px] h-7 flex-1">
+                      📊 Stages
+                    </Button>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground space-y-0.5 p-2 bg-muted/30 rounded-lg">
+                    <div>Ideal: {profile.idealTemp}°C / {profile.idealHumidity}% RH / {profile.idealLight}% light</div>
+                    <div>Harvest: Day {bestDay} ({Math.ceil(bestDay / 7)} weeks)</div>
+                    <div>Total cycle: {totalDays} days ({Math.ceil(totalDays / 7)} weeks)</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
