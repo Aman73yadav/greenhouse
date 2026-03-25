@@ -37,7 +37,7 @@ import greenhouseHero from '@/assets/greenhouse-hero.jpg';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'plants', label: 'Plants', icon: Sprout },
-  { id: '3d', label: '3D View', icon: Box },
+  
   { id: 'devices', label: 'IoT Devices', icon: Cpu },
   { id: 'schedules', label: 'Schedules', icon: Calendar },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
