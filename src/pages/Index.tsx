@@ -8,7 +8,6 @@ import {
   BarChart3,
   Settings,
   Bell,
-  Box,
   Sprout,
   LogOut,
   User
