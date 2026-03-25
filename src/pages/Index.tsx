@@ -210,8 +210,19 @@ const Index = () => {
           </div>
         )}
 
+        {/* 3D View Tab */}
+        {activeTab === '3d' && (
+          <div className="space-y-8">
+            <div className="glass-card p-4">
+              <h3 className="text-lg font-display font-bold mb-4">🌱 Plant Lifecycle — Day-by-Day Growth & Harvest Simulation</h3>
+              <Suspense fallback={<div className="h-[500px] flex items-center justify-center text-muted-foreground">Loading 3D...</div>}>
+                <PlantLifecycle3D />
+              </Suspense>
+            </div>
+          </div>
+        )}
 
-        {/* IoT Devices Tab */}
+
         {activeTab === 'devices' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
