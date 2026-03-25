@@ -33,12 +33,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import greenhouseHero from '@/assets/greenhouse-hero.jpg';
 
-const Greenhouse3D = lazy(() => import('@/components/three/Greenhouse3D'));
-const GrowthSimulation3D = lazy(() => import('@/components/three/GrowthSimulation3D'));
-const VirtualField3D = lazy(() => import('@/components/three/VirtualField3D'));
-const SoilVisualization3D = lazy(() => import('@/components/three/SoilVisualization3D'));
-const PlantGrowth3D = lazy(() => import('@/components/three/PlantGrowth3D'));
-const IrrigationSystem3D = lazy(() => import('@/components/three/IrrigationSystem3D'));
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
