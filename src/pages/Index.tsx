@@ -208,65 +208,6 @@ const Index = () => {
           </div>
         )}
 
-        {/* 3D View Tab */}
-        {activeTab === '3d' && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="glass-card p-4">
-                <h3 className="text-lg font-display font-bold mb-4">3D Greenhouse</h3>
-                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading 3D...</div>}>
-                  <Greenhouse3D 
-                    sensorData={{
-                      temperature: tempSensor?.value || 24,
-                      humidity: humiditySensor?.value || 65,
-                      moisture: moistureSensor?.value || 70,
-                    }}
-                    irrigationActive={controls.irrigation}
-                  />
-                </Suspense>
-              </div>
-              <div className="glass-card p-4">
-                <h3 className="text-lg font-display font-bold mb-4">Growth Simulation</h3>
-                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
-                  <GrowthSimulation3D />
-                </Suspense>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="glass-card p-4">
-                <h3 className="text-lg font-display font-bold mb-4">Soil Layers & Root System</h3>
-                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
-                  <SoilVisualization3D moisture={moistureSensor?.value || 50} growthStage={60} />
-                </Suspense>
-              </div>
-              <div className="glass-card p-4">
-                <h3 className="text-lg font-display font-bold mb-4">Plant Growth Process</h3>
-                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
-                  <PlantGrowth3D />
-                </Suspense>
-              </div>
-            </div>
-            
-            <div className="glass-card p-4">
-              <h3 className="text-lg font-display font-bold mb-4">Irrigation System</h3>
-              <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading...</div>}>
-                <IrrigationSystem3D irrigationActive={controls.irrigation} mistingActive={controls.misting} />
-              </Suspense>
-            </div>
-            
-            <div className="glass-card p-4">
-              <h3 className="text-lg font-display font-bold mb-4">Virtual Field Visualization</h3>
-              <Suspense fallback={<div className="h-[500px] flex items-center justify-center">Loading...</div>}>
-                <VirtualField3D 
-                  temperature={tempSensor?.value}
-                  humidity={humiditySensor?.value}
-                  moisture={moistureSensor?.value}
-                />
-              </Suspense>
-            </div>
-          </div>
-        )}
 
         {/* IoT Devices Tab */}
         {activeTab === 'devices' && (
