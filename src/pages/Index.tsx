@@ -34,11 +34,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import greenhouseHero from '@/assets/greenhouse-hero.jpg';
 
+const PlantLifecycle3D = lazy(() => import('@/components/three/PlantLifecycle3D'));
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'plants', label: 'Plants', icon: Sprout },
-  
+  { id: '3d', label: '3D View', icon: Box },
   { id: 'devices', label: 'IoT Devices', icon: Cpu },
   { id: 'schedules', label: 'Schedules', icon: Calendar },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
