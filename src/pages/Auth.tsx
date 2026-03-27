@@ -93,7 +93,7 @@ const Auth = () => {
         return;
       }
 
-      toast.success('Account created successfully!');
+      toast.success('Account created! Please check your email to verify your account before signing in.', { duration: 8000 });
     } catch (error: any) {
       toast.error('An unexpected error occurred');
     } finally {
