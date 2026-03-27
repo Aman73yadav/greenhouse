@@ -19,13 +19,13 @@ const Auth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
+      if (session?.user && session.user.email_confirmed_at) {
         navigate('/');
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+      if (session?.user && session.user.email_confirmed_at) {
         navigate('/');
       }
     });
