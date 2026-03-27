@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  if (!user) {
+  if (!user || !user.email_confirmed_at) {
     return <Navigate to="/auth" replace />;
   }
   
