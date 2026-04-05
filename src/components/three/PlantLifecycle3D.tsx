@@ -992,7 +992,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
                   <div className="flex items-center gap-2">
                     <Droplets className="w-3 h-3 text-blue-400" />
                     <span className="text-[10px] text-muted-foreground w-8">{env.humidity}%</span>
-                    <Slider value={[env.humidity]} onValueChange={([v]) => setEnv(prev => ({ ...prev, humidity: v }))} min={20} max={100} step={1} className="flex-1" />
+                    <Slider value={[env.humidity]} onValueChange={([v]) => setEnv(prev => ({ ...prev, humidity: v }))} min={20} max={100} step={1} className="flex-1" disabled={useLiveData && !!liveSensorData} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Sun className="w-3 h-3 text-yellow-400" />
