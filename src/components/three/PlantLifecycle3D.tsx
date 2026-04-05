@@ -865,14 +865,13 @@ const PlantLifecycle3D = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <Select value={plantType} onValueChange={(v) => { setPlantType(v as PlantType); setCurrentDay(1); setIsPlaying(false); }}>
-                      <SelectTrigger className="w-[140px] h-8 text-sm">
+                      <SelectTrigger className="w-[150px] h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="tomato">🍅 Tomato</SelectItem>
-                        <SelectItem value="pepper">🌶️ Pepper</SelectItem>
-                        <SelectItem value="lettuce">🥬 Lettuce</SelectItem>
-                        <SelectItem value="strawberry">🍓 Strawberry</SelectItem>
+                        {Object.entries(PLANT_PROFILES).map(([key, p]) => (
+                          <SelectItem key={key} value={key}>{p.emoji} {p.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: phaseColors[stage.phase] }} />
