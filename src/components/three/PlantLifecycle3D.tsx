@@ -11,10 +11,11 @@ import { Play, Pause, SkipForward, SkipBack, Calendar, Sprout, Apple, Sun, Cloud
 
 // ===================== TYPES =====================
 
-type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry';
+type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry' | 'corn' | 'sunflower' | 'basil' | 'cucumber' | 'watermelon' | 'carrot';
 
 interface PlantProfile {
   name: string;
+  emoji: string;
   totalDays: number;
   bestHarvestDay: number;
   stemColor: string;
@@ -26,32 +27,64 @@ interface PlantProfile {
   petalColor: string;
   maxFruits: number;
   maxLeaves: number;
-  idealTemp: number;   // °C
-  idealHumidity: number; // %
-  idealLight: number;    // %
-  fruitShape: 'sphere' | 'elongated' | 'flat';
+  idealTemp: number;
+  idealHumidity: number;
+  idealLight: number;
+  fruitShape: 'sphere' | 'elongated' | 'flat' | 'cone' | 'cylinder';
+  tallPlant?: boolean;
+  rootVegetable?: boolean;
 }
 
 const PLANT_PROFILES: Record<PlantType, PlantProfile> = {
   tomato: {
-    name: 'Tomato', totalDays: 112, bestHarvestDay: 105, stemColor: '#2d5a27', leafColor: '#38a169', leafColorYoung: '#68d391',
+    name: 'Tomato', emoji: '🍅', totalDays: 112, bestHarvestDay: 105, stemColor: '#2d5a27', leafColor: '#38a169', leafColorYoung: '#68d391',
     fruitColorUnripe: '#48bb78', fruitColorRipe: '#e53e3e', flowerColor: '#FBBF24', petalColor: '#FDE68A',
     maxFruits: 6, maxLeaves: 12, idealTemp: 25, idealHumidity: 65, idealLight: 80, fruitShape: 'sphere',
   },
   pepper: {
-    name: 'Pepper', totalDays: 126, bestHarvestDay: 118, stemColor: '#2E7D32', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    name: 'Pepper', emoji: '🌶️', totalDays: 126, bestHarvestDay: 118, stemColor: '#2E7D32', leafColor: '#4CAF50', leafColorYoung: '#81C784',
     fruitColorUnripe: '#66BB6A', fruitColorRipe: '#FF5722', flowerColor: '#E8F5E9', petalColor: '#C8E6C9',
     maxFruits: 5, maxLeaves: 10, idealTemp: 28, idealHumidity: 60, idealLight: 85, fruitShape: 'elongated',
   },
   lettuce: {
-    name: 'Lettuce', totalDays: 70, bestHarvestDay: 63, stemColor: '#4CAF50', leafColor: '#81C784', leafColorYoung: '#A5D6A7',
+    name: 'Lettuce', emoji: '🥬', totalDays: 70, bestHarvestDay: 63, stemColor: '#4CAF50', leafColor: '#81C784', leafColorYoung: '#A5D6A7',
     fruitColorUnripe: '#81C784', fruitColorRipe: '#81C784', flowerColor: '#FFF9C4', petalColor: '#FFFDE7',
     maxFruits: 0, maxLeaves: 18, idealTemp: 18, idealHumidity: 70, idealLight: 60, fruitShape: 'sphere',
   },
   strawberry: {
-    name: 'Strawberry', totalDays: 98, bestHarvestDay: 90, stemColor: '#33691E', leafColor: '#558B2F', leafColorYoung: '#7CB342',
+    name: 'Strawberry', emoji: '🍓', totalDays: 98, bestHarvestDay: 90, stemColor: '#33691E', leafColor: '#558B2F', leafColorYoung: '#7CB342',
     fruitColorUnripe: '#AED581', fruitColorRipe: '#D32F2F', flowerColor: '#FFFFFF', petalColor: '#F5F5F5',
     maxFruits: 8, maxLeaves: 9, idealTemp: 22, idealHumidity: 70, idealLight: 75, fruitShape: 'sphere',
+  },
+  corn: {
+    name: 'Corn', emoji: '🌽', totalDays: 105, bestHarvestDay: 95, stemColor: '#33691E', leafColor: '#558B2F', leafColorYoung: '#8BC34A',
+    fruitColorUnripe: '#C5E1A5', fruitColorRipe: '#FFD54F', flowerColor: '#F0E68C', petalColor: '#FFF8E1',
+    maxFruits: 3, maxLeaves: 14, idealTemp: 27, idealHumidity: 55, idealLight: 90, fruitShape: 'cylinder', tallPlant: true,
+  },
+  sunflower: {
+    name: 'Sunflower', emoji: '🌻', totalDays: 85, bestHarvestDay: 78, stemColor: '#2E7D32', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#795548', fruitColorRipe: '#4E342E', flowerColor: '#FFD600', petalColor: '#FFEB3B',
+    maxFruits: 1, maxLeaves: 10, idealTemp: 24, idealHumidity: 45, idealLight: 95, fruitShape: 'flat', tallPlant: true,
+  },
+  basil: {
+    name: 'Basil', emoji: '🌿', totalDays: 60, bestHarvestDay: 50, stemColor: '#2E7D32', leafColor: '#1B5E20', leafColorYoung: '#4CAF50',
+    fruitColorUnripe: '#66BB6A', fruitColorRipe: '#66BB6A', flowerColor: '#CE93D8', petalColor: '#E1BEE7',
+    maxFruits: 0, maxLeaves: 20, idealTemp: 23, idealHumidity: 55, idealLight: 70, fruitShape: 'sphere',
+  },
+  cucumber: {
+    name: 'Cucumber', emoji: '🥒', totalDays: 75, bestHarvestDay: 68, stemColor: '#388E3C', leafColor: '#66BB6A', leafColorYoung: '#A5D6A7',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#2E7D32', flowerColor: '#FFEB3B', petalColor: '#FFF9C4',
+    maxFruits: 5, maxLeaves: 12, idealTemp: 26, idealHumidity: 75, idealLight: 75, fruitShape: 'elongated',
+  },
+  watermelon: {
+    name: 'Watermelon', emoji: '🍉', totalDays: 95, bestHarvestDay: 88, stemColor: '#33691E', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#2E7D32', flowerColor: '#FFEB3B', petalColor: '#FFF9C4',
+    maxFruits: 2, maxLeaves: 14, idealTemp: 28, idealHumidity: 65, idealLight: 85, fruitShape: 'sphere',
+  },
+  carrot: {
+    name: 'Carrot', emoji: '🥕', totalDays: 80, bestHarvestDay: 72, stemColor: '#33691E', leafColor: '#66BB6A', leafColorYoung: '#A5D6A7',
+    fruitColorUnripe: '#FFB74D', fruitColorRipe: '#E65100', flowerColor: '#FFFFFF', petalColor: '#F5F5F5',
+    maxFruits: 1, maxLeaves: 8, idealTemp: 18, idealHumidity: 60, idealLight: 65, fruitShape: 'cone', rootVegetable: true,
   },
 };
 
