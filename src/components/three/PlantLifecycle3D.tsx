@@ -792,6 +792,19 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const isHarvestWindow = currentDay >= Math.floor(profile.totalDays * 0.87);
   const growthSpeed = computeGrowthSpeed(env, profile);
 
+  // Sync live sensor data when enabled
+  useEffect(() => {
+    if (useLiveData && liveSensorData) {
+      setEnv(prev => ({
+        ...prev,
+        temperature: liveSensorData.temperature ?? prev.temperature,
+        humidity: liveSensorData.humidity ?? prev.humidity,
+        light: liveSensorData.light ?? prev.light,
+        lightsOn: liveSensorData.lightsOn ?? prev.lightsOn,
+      }));
+    }
+  }, [useLiveData, liveSensorData?.temperature, liveSensorData?.humidity, liveSensorData?.light, liveSensorData?.lightsOn]);
+
   // Clamp currentDay when switching plant type
   useEffect(() => {
     if (currentDay > profile.totalDays) setCurrentDay(profile.totalDays);
