@@ -216,7 +216,12 @@ const Index = () => {
             <div className="glass-card p-4">
               <h3 className="text-lg font-display font-bold mb-4">🌱 Plant Lifecycle — Day-by-Day Growth & Harvest Simulation</h3>
               <Suspense fallback={<div className="h-[500px] flex items-center justify-center text-muted-foreground">Loading 3D...</div>}>
-                <PlantLifecycle3D />
+                <PlantLifecycle3D liveSensorData={{
+                  temperature: tempSensor?.value,
+                  humidity: humiditySensor?.value,
+                  light: sensorData.find(s => s.type === 'light')?.value,
+                  lightsOn: controls.lighting,
+                }} />
               </Suspense>
             </div>
           </div>

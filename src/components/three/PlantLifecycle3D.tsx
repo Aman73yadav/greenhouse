@@ -762,11 +762,21 @@ const DEFAULT_CAMERA_SINGLE: [number, number, number] = [4, 3, 4];
 const DEFAULT_CAMERA_TIMELINE: [number, number, number] = [0, 5, 12];
 const DEFAULT_TARGET: [number, number, number] = [0, 0.8, 0];
 
-const PlantLifecycle3D = () => {
+interface PlantLifecycle3DProps {
+  liveSensorData?: {
+    temperature?: number;
+    humidity?: number;
+    light?: number;
+    lightsOn?: boolean;
+  };
+}
+
+const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const [plantType, setPlantType] = useState<PlantType>('tomato');
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'timeline'>('single');
+  const [useLiveData, setUseLiveData] = useState(true);
   const [env, setEnv] = useState<EnvironmentState>({
     temperature: 25,
     humidity: 65,
