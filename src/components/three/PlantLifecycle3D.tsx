@@ -357,6 +357,9 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
     return base.getStyle();
   }, [profile.leafColor, env.light, env.lightsOn]);
 
+  const stemMaxHeight = profile.tallPlant ? 3.5 : 2.5;
+  const stemHeight = (stage.heightPercent / 100) * stemMaxHeight;
+
   return (
     <group ref={plantRef}>
       <Pot />
@@ -382,7 +385,7 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
         <group>
           {[...Array(Math.max(2, Math.ceil(stemHeight / 0.4)))].map((_, i) => {
             const segH = stemHeight / Math.max(2, Math.ceil(stemHeight / 0.4));
-            const thick = 0.04 - i * 0.003;
+            const thick = (profile.tallPlant ? 0.06 : 0.04) - i * 0.003;
             return (
               <mesh key={i} position={[0, i * segH + segH / 2, 0]}>
                 <cylinderGeometry args={[Math.max(0.01, thick * 0.8), Math.max(0.012, thick), segH, 8]} />
@@ -401,10 +404,12 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
             const h = 0.15 + (i / stage.leafCount) * stemHeight * 0.85;
             const size = 0.1 + (i % 3) * 0.03;
             const isYoung = i > stage.leafCount - 3;
+            // Corn/sunflower: longer, narrower leaves
+            const leafScale = profile.tallPlant ? [1.8, 0.6, 1] : [1, 1, 1];
             return (
               <Float key={i} speed={performanceMode ? 0 : 1.2} rotationIntensity={performanceMode ? 0 : 0.08} floatIntensity={0}>
                 <group position={[0, Math.min(h, stemHeight * 0.95), 0]} rotation={[0.35, angle, Math.PI / 5]}>
-                  <mesh position={[0.15, 0, 0]}>
+                  <mesh position={[0.15, 0, 0]} scale={leafScale as any}>
                     <sphereGeometry args={[size, 6, 4]} />
                     <meshStandardMaterial color={isYoung ? profile.leafColorYoung : effectiveLeafColor} roughness={0.5} side={THREE.DoubleSide} />
                   </mesh>
@@ -415,7 +420,7 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
         </group>
       )}
 
-      {/* Lettuce head (special) */}
+      {/* Lettuce head */}
       {profile.name === 'Lettuce' && stage.phase !== 'seed' && stage.phase !== 'seedling' && (
         <group position={[0, 0.1, 0]}>
           {[...Array(Math.min(15, Math.floor(stage.heightPercent / 5)))].map((_, i) => {
@@ -433,8 +438,147 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
         </group>
       )}
 
-      {/* Flowers */}
-      {stage.phase === 'flowering' && (
+      {/* Basil bush - dense leaf clusters */}
+      {profile.name === 'Basil' && stage.phase !== 'seed' && stage.phase !== 'seedling' && (
+        <group position={[0, stemHeight * 0.4, 0]}>
+          {[...Array(Math.min(12, Math.floor(stage.heightPercent / 6)))].map((_, i) => {
+            const angle = (i * 2.4);
+            const radius = 0.08 + (i / 12) * 0.15;
+            return (
+              <Float key={i} speed={performanceMode ? 0 : 1.5} rotationIntensity={performanceMode ? 0 : 0.06} floatIntensity={0}>
+                <mesh position={[Math.cos(angle) * radius, i * 0.04, Math.sin(angle) * radius]}>
+                  <sphereGeometry args={[0.06 + Math.random() * 0.03, 6, 4]} />
+                  <meshStandardMaterial color={i % 2 === 0 ? profile.leafColor : profile.leafColorYoung} roughness={0.4} side={THREE.DoubleSide} />
+                </mesh>
+              </Float>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Sunflower head */}
+      {profile.name === 'Sunflower' && (stage.phase === 'flowering' || stage.phase === 'fruiting' || stage.phase === 'harvest') && (
+        <group position={[0, stemHeight * 0.95, 0]} rotation={[0.2, 0, 0]}>
+          {/* Center disc */}
+          <mesh>
+            <cylinderGeometry args={[0.18 + stage.fruitRipeness * 0.1, 0.18 + stage.fruitRipeness * 0.1, 0.06, 24]} />
+            <meshStandardMaterial color={stage.fruitRipeness > 0.5 ? '#4E342E' : '#795548'} roughness={0.8} />
+          </mesh>
+          {/* Petals */}
+          {[...Array(16)].map((_, i) => {
+            const a = (i / 16) * Math.PI * 2;
+            const r = 0.25 + stage.fruitRipeness * 0.08;
+            return (
+              <mesh key={i} position={[Math.cos(a) * r, 0, Math.sin(a) * r]} rotation={[0, 0, a + Math.PI / 2]}>
+                <planeGeometry args={[0.12, 0.06]} />
+                <meshStandardMaterial color={profile.petalColor} emissive={profile.flowerColor} emissiveIntensity={0.15} side={THREE.DoubleSide} />
+              </mesh>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Corn cobs */}
+      {profile.name === 'Corn' && stage.fruitCount > 0 && (
+        <group position={[0, stemHeight * 0.55, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => {
+            const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2;
+            return (
+              <group key={i} position={[Math.cos(a) * 0.12, -i * 0.25, Math.sin(a) * 0.12]} rotation={[0.5, a, 0]}>
+                {/* Husk */}
+                <mesh>
+                  <cylinderGeometry args={[0.06, 0.04, 0.25, 8]} />
+                  <meshStandardMaterial color={stage.fruitRipeness > 0.5 ? '#F5DEB3' : '#81C784'} roughness={0.6} />
+                </mesh>
+                {/* Kernels showing */}
+                {stage.fruitRipeness > 0.3 && (
+                  <mesh position={[0, 0, 0.03]}>
+                    <cylinderGeometry args={[0.045, 0.03, 0.2, 8]} />
+                    <meshStandardMaterial color={fruitColor} roughness={0.4} />
+                  </mesh>
+                )}
+                {/* Silk */}
+                <mesh position={[0, 0.14, 0]}>
+                  <cylinderGeometry args={[0.01, 0.003, 0.08, 4]} />
+                  <meshStandardMaterial color="#F0E68C" />
+                </mesh>
+              </group>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Carrot (root vegetable - shows root below pot) */}
+      {profile.name === 'Carrot' && stage.phase !== 'seed' && stage.phase !== 'seedling' && (
+        <group position={[0, -0.3, 0]}>
+          {/* Root visible partially */}
+          <mesh position={[0, -0.1 - stage.fruitRipeness * 0.2, 0]}>
+            <coneGeometry args={[0.06 + stage.fruitRipeness * 0.04, 0.3 + stage.fruitRipeness * 0.2, 8]} />
+            <meshStandardMaterial color={fruitColor} roughness={0.5} />
+          </mesh>
+          {/* Feathery carrot top */}
+          {[...Array(6)].map((_, i) => (
+            <mesh key={i} position={[Math.cos(i * 1.05) * 0.03, 0.15 + i * 0.02, Math.sin(i * 1.05) * 0.03]} rotation={[0.4, i * 1.05, 0]}>
+              <planeGeometry args={[0.04, 0.15]} />
+              <meshStandardMaterial color={profile.leafColor} side={THREE.DoubleSide} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* Watermelon - large ground fruit */}
+      {profile.name === 'Watermelon' && stage.fruitCount > 0 && (
+        <group position={[0, -0.2, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => (
+            <Float key={i} speed={0} floatIntensity={0}>
+              <mesh position={[i * 0.5 - 0.25, 0, 0.3]}>
+                <sphereGeometry args={[0.12 + stage.fruitRipeness * 0.12, 16, 16]} />
+                <meshStandardMaterial color={fruitColor} roughness={0.3} />
+              </mesh>
+              {/* Stripe */}
+              {stage.fruitRipeness > 0.3 && (
+                <mesh position={[i * 0.5 - 0.25, 0, 0.3]} rotation={[0, i * 0.5, 0]}>
+                  <sphereGeometry args={[0.125 + stage.fruitRipeness * 0.12, 16, 4]} />
+                  <meshStandardMaterial color="#1B5E20" roughness={0.3} wireframe />
+                </mesh>
+              )}
+            </Float>
+          ))}
+        </group>
+      )}
+
+      {/* Cucumber fruits - hanging */}
+      {profile.name === 'Cucumber' && stage.fruitCount > 0 && (
+        <group position={[0, stemHeight * 0.5, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => {
+            const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.4;
+            return (
+              <group key={i} position={[Math.cos(a) * 0.2, -0.05 - i * 0.12, Math.sin(a) * 0.2]}>
+                <mesh rotation={[0.3, 0, 0]}>
+                  <cylinderGeometry args={[0.006, 0.004, 0.07, 6]} />
+                  <meshStandardMaterial color="#4A7023" />
+                </mesh>
+                <Float speed={performanceMode ? 0 : 1.5} floatIntensity={performanceMode ? 0 : 0.04}>
+                  <mesh position={[0, -0.06, 0]}>
+                    <capsuleGeometry args={[0.03 + stage.fruitRipeness * 0.02, 0.08 + stage.fruitRipeness * 0.06, 6, 12]} />
+                    <meshStandardMaterial color={fruitColor} roughness={0.3} />
+                  </mesh>
+                  {/* Bumps on cucumber */}
+                  {stage.fruitRipeness > 0.4 && [0, 1, 2].map(b => (
+                    <mesh key={b} position={[Math.cos(b * 2.1) * 0.035, -0.06 + b * 0.03, Math.sin(b * 2.1) * 0.035]}>
+                      <sphereGeometry args={[0.008, 4, 4]} />
+                      <meshStandardMaterial color="#388E3C" />
+                    </mesh>
+                  ))}
+                </Float>
+              </group>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Flowers (generic for plants that don't have special rendering) */}
+      {stage.phase === 'flowering' && profile.name !== 'Sunflower' && (
         <group position={[0, stemHeight * 0.8, 0]}>
           {[0, 1, 2, 3].map((i) => (
             <Float key={i} speed={2} floatIntensity={0.1}>
@@ -457,15 +601,12 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
         </group>
       )}
 
-      {/* Fruits */}
-      {stage.fruitCount > 0 && (
+      {/* Generic fruits (tomato, pepper, strawberry) */}
+      {stage.fruitCount > 0 && !['Corn', 'Sunflower', 'Watermelon', 'Cucumber', 'Carrot'].includes(profile.name) && (
         <group position={[0, stemHeight * 0.65, 0]}>
           {[...Array(stage.fruitCount)].map((_, i) => {
             const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.4;
             const baseSize = 0.05 + stage.fruitRipeness * 0.06;
-            const fruitGeo = profile.fruitShape === 'elongated'
-              ? [baseSize * 0.7, baseSize * 0.7, baseSize * 1.4] as [number, number, number]
-              : undefined;
             return (
               <group key={i} position={[Math.cos(a) * 0.22, -0.05 - i * 0.1, Math.sin(a) * 0.22]}>
                 <mesh rotation={[0.3, 0, 0]}>
