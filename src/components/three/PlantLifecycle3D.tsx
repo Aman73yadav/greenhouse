@@ -974,7 +974,16 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
               <div className="grid grid-cols-2 gap-3">
                 {/* Left: environment */}
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Environment</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Environment</div>
+                    {liveSensorData && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">Live</span>
+                        <Switch checked={useLiveData} onCheckedChange={(v) => setUseLiveData(v)} className="scale-[0.6]" />
+                        {useLiveData && <span className="text-[10px] text-primary font-bold animate-pulse">●</span>}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <Thermometer className="w-3 h-3 text-destructive" />
                     <span className="text-[10px] text-muted-foreground w-8">{env.temperature}°C</span>
