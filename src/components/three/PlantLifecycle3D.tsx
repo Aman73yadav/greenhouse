@@ -762,11 +762,21 @@ const DEFAULT_CAMERA_SINGLE: [number, number, number] = [4, 3, 4];
 const DEFAULT_CAMERA_TIMELINE: [number, number, number] = [0, 5, 12];
 const DEFAULT_TARGET: [number, number, number] = [0, 0.8, 0];
 
-const PlantLifecycle3D = () => {
+interface PlantLifecycle3DProps {
+  liveSensorData?: {
+    temperature?: number;
+    humidity?: number;
+    light?: number;
+    lightsOn?: boolean;
+  };
+}
+
+const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const [plantType, setPlantType] = useState<PlantType>('tomato');
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'timeline'>('single');
+  const [useLiveData, setUseLiveData] = useState(true);
   const [env, setEnv] = useState<EnvironmentState>({
     temperature: 25,
     humidity: 65,
@@ -781,6 +791,19 @@ const PlantLifecycle3D = () => {
   const bestDay = profile.bestHarvestDay;
   const isHarvestWindow = currentDay >= Math.floor(profile.totalDays * 0.87);
   const growthSpeed = computeGrowthSpeed(env, profile);
+
+  // Sync live sensor data when enabled
+  useEffect(() => {
+    if (useLiveData && liveSensorData) {
+      setEnv(prev => ({
+        ...prev,
+        temperature: liveSensorData.temperature ?? prev.temperature,
+        humidity: liveSensorData.humidity ?? prev.humidity,
+        light: liveSensorData.light ?? prev.light,
+        lightsOn: liveSensorData.lightsOn ?? prev.lightsOn,
+      }));
+    }
+  }, [useLiveData, liveSensorData?.temperature, liveSensorData?.humidity, liveSensorData?.light, liveSensorData?.lightsOn]);
 
   // Clamp currentDay when switching plant type
   useEffect(() => {
@@ -951,21 +974,30 @@ const PlantLifecycle3D = () => {
               <div className="grid grid-cols-2 gap-3">
                 {/* Left: environment */}
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Environment</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Environment</div>
+                    {liveSensorData && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">Live</span>
+                        <Switch checked={useLiveData} onCheckedChange={(v) => setUseLiveData(v)} className="scale-[0.6]" />
+                        {useLiveData && <span className="text-[10px] text-primary font-bold animate-pulse">●</span>}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <Thermometer className="w-3 h-3 text-destructive" />
                     <span className="text-[10px] text-muted-foreground w-8">{env.temperature}°C</span>
-                    <Slider value={[env.temperature]} onValueChange={([v]) => setEnv(prev => ({ ...prev, temperature: v }))} min={10} max={40} step={1} className="flex-1" />
+                    <Slider value={[env.temperature]} onValueChange={([v]) => setEnv(prev => ({ ...prev, temperature: v }))} min={10} max={40} step={1} className="flex-1" disabled={useLiveData && !!liveSensorData} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Droplets className="w-3 h-3 text-blue-400" />
                     <span className="text-[10px] text-muted-foreground w-8">{env.humidity}%</span>
-                    <Slider value={[env.humidity]} onValueChange={([v]) => setEnv(prev => ({ ...prev, humidity: v }))} min={20} max={100} step={1} className="flex-1" />
+                    <Slider value={[env.humidity]} onValueChange={([v]) => setEnv(prev => ({ ...prev, humidity: v }))} min={20} max={100} step={1} className="flex-1" disabled={useLiveData && !!liveSensorData} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Sun className="w-3 h-3 text-yellow-400" />
                     <span className="text-[10px] text-muted-foreground w-8">{env.light}%</span>
-                    <Slider value={[env.light]} onValueChange={([v]) => setEnv(prev => ({ ...prev, light: v }))} min={0} max={100} step={1} className="flex-1" />
+                    <Slider value={[env.light]} onValueChange={([v]) => setEnv(prev => ({ ...prev, light: v }))} min={0} max={100} step={1} className="flex-1" disabled={useLiveData && !!liveSensorData} />
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5">
