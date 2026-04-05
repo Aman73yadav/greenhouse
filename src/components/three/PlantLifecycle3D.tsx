@@ -987,7 +987,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
                   <div className="flex items-center gap-2">
                     <Thermometer className="w-3 h-3 text-destructive" />
                     <span className="text-[10px] text-muted-foreground w-8">{env.temperature}°C</span>
-                    <Slider value={[env.temperature]} onValueChange={([v]) => setEnv(prev => ({ ...prev, temperature: v }))} min={10} max={40} step={1} className="flex-1" />
+                    <Slider value={[env.temperature]} onValueChange={([v]) => setEnv(prev => ({ ...prev, temperature: v }))} min={10} max={40} step={1} className="flex-1" disabled={useLiveData && !!liveSensorData} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Droplets className="w-3 h-3 text-blue-400" />
