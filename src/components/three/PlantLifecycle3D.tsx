@@ -323,7 +323,7 @@ interface PlantModelProps {
 const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) => {
   const plantRef = useRef<THREE.Group>(null);
   const leavesRef = useRef<THREE.Group>(null);
-  const stemHeight = (stage.heightPercent / 100) * 2.5;
+  // stemHeight computed below after stemMaxHeight
   const isHarvest = stage.phase === 'harvest';
 
   // Wilting effect when conditions are bad
