@@ -1108,7 +1108,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
     harvest: 'hsl(0, 72%, 51%)',
   };
 
-  const totalDays = profile.totalDays;
+  const totalDays = viewMode === 'compare' ? maxDay : profile.totalDays;
 
   return (
     <Fullscreen3DWrapper
