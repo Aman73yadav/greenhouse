@@ -1133,6 +1133,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
                 viewMode={viewMode}
                 profile={profile}
                 env={env}
+                compareProfile={viewMode === 'compare' ? compareProfile : undefined}
               />
             </Suspense>
           </Canvas>
