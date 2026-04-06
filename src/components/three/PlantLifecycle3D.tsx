@@ -1058,10 +1058,12 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const profile = PLANT_PROFILES[plantType];
+  const compareProfile = PLANT_PROFILES[compareType];
   const stage = getDayStage(currentDay, profile);
   const bestDay = profile.bestHarvestDay;
   const isHarvestWindow = currentDay >= Math.floor(profile.totalDays * 0.87);
   const growthSpeed = computeGrowthSpeed(env, profile);
+  const maxDay = viewMode === 'compare' ? Math.max(profile.totalDays, compareProfile.totalDays) : profile.totalDays;
 
   // Sync live sensor data when enabled
   useEffect(() => {
