@@ -1290,14 +1290,32 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
                 {/* Right: view mode + info */}
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">View</div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     <Button size="sm" variant={viewMode === 'single' ? 'default' : 'outline'} onClick={() => setViewMode('single')} className="text-[10px] h-7 flex-1">
                       🌱 Plant
+                    </Button>
+                    <Button size="sm" variant={viewMode === 'compare' ? 'default' : 'outline'} onClick={() => setViewMode('compare')} className="text-[10px] h-7 flex-1">
+                      ⚖️ Compare
                     </Button>
                     <Button size="sm" variant={viewMode === 'timeline' ? 'default' : 'outline'} onClick={() => setViewMode('timeline')} className="text-[10px] h-7 flex-1">
                       📊 Stages
                     </Button>
                   </div>
+                  {viewMode === 'compare' && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">vs</span>
+                      <Select value={compareType} onValueChange={(v) => setCompareType(v as PlantType)}>
+                        <SelectTrigger className="h-7 text-[10px] flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(PLANT_PROFILES).filter(([key]) => key !== plantType).map(([key, p]) => (
+                            <SelectItem key={key} value={key}>{p.emoji} {p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="text-[10px] text-muted-foreground space-y-0.5 p-2 bg-muted/30 rounded-lg">
                     <div>Ideal: {profile.idealTemp}°C / {profile.idealHumidity}% RH / {profile.idealLight}% light</div>
                     <div>Harvest: Day {bestDay} ({Math.ceil(bestDay / 7)} weeks)</div>
