@@ -1124,7 +1124,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
         <>
           <Canvas shadows={!performanceMode}>
             <SceneCapture sceneRef={sceneRef} />
-            <PerspectiveCamera makeDefault position={viewMode === 'timeline' ? DEFAULT_CAMERA_TIMELINE : DEFAULT_CAMERA_SINGLE} fov={45} />
+            <PerspectiveCamera makeDefault position={viewMode === 'timeline' ? DEFAULT_CAMERA_TIMELINE : viewMode === 'compare' ? DEFAULT_CAMERA_COMPARE : DEFAULT_CAMERA_SINGLE} fov={45} />
             <Suspense fallback={null}>
               <LifecycleScene
                 currentDay={currentDay}
