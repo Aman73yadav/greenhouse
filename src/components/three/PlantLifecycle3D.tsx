@@ -86,6 +86,31 @@ const PLANT_PROFILES: Record<PlantType, PlantProfile> = {
     fruitColorUnripe: '#FFB74D', fruitColorRipe: '#E65100', flowerColor: '#FFFFFF', petalColor: '#F5F5F5',
     maxFruits: 1, maxLeaves: 8, idealTemp: 18, idealHumidity: 60, idealLight: 65, fruitShape: 'cone', rootVegetable: true,
   },
+  eggplant: {
+    name: 'Eggplant', emoji: '🍆', totalDays: 100, bestHarvestDay: 92, stemColor: '#4A148C', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#4A148C', flowerColor: '#CE93D8', petalColor: '#E1BEE7',
+    maxFruits: 4, maxLeaves: 10, idealTemp: 27, idealHumidity: 65, idealLight: 80, fruitShape: 'elongated',
+  },
+  pumpkin: {
+    name: 'Pumpkin', emoji: '🎃', totalDays: 120, bestHarvestDay: 110, stemColor: '#33691E', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#E65100', flowerColor: '#FFB300', petalColor: '#FFE082',
+    maxFruits: 2, maxLeaves: 14, idealTemp: 24, idealHumidity: 60, idealLight: 85, fruitShape: 'sphere',
+  },
+  grape: {
+    name: 'Grape', emoji: '🍇', totalDays: 140, bestHarvestDay: 130, stemColor: '#5D4037', leafColor: '#388E3C', leafColorYoung: '#66BB6A',
+    fruitColorUnripe: '#A5D6A7', fruitColorRipe: '#6A1B9A', flowerColor: '#E8F5E9', petalColor: '#C8E6C9',
+    maxFruits: 6, maxLeaves: 12, idealTemp: 22, idealHumidity: 55, idealLight: 80, fruitShape: 'sphere',
+  },
+  rose: {
+    name: 'Rose', emoji: '🌹', totalDays: 90, bestHarvestDay: 80, stemColor: '#2E7D32', leafColor: '#388E3C', leafColorYoung: '#66BB6A',
+    fruitColorUnripe: '#F48FB1', fruitColorRipe: '#C62828', flowerColor: '#E53935', petalColor: '#EF5350',
+    maxFruits: 3, maxLeaves: 8, idealTemp: 20, idealHumidity: 60, idealLight: 70, fruitShape: 'sphere',
+  },
+  cactus: {
+    name: 'Cactus', emoji: '🌵', totalDays: 180, bestHarvestDay: 170, stemColor: '#2E7D32', leafColor: '#388E3C', leafColorYoung: '#4CAF50',
+    fruitColorUnripe: '#F48FB1', fruitColorRipe: '#E91E63', flowerColor: '#FF4081', petalColor: '#F8BBD0',
+    maxFruits: 2, maxLeaves: 0, idealTemp: 30, idealHumidity: 25, idealLight: 95, fruitShape: 'sphere',
+  },
 };
 
 interface EnvironmentState {
