@@ -1045,7 +1045,8 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const [plantType, setPlantType] = useState<PlantType>('tomato');
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [viewMode, setViewMode] = useState<'single' | 'timeline'>('single');
+  const [viewMode, setViewMode] = useState<'single' | 'timeline' | 'compare'>('single');
+  const [compareType, setCompareType] = useState<PlantType>('pepper');
   const [useLiveData, setUseLiveData] = useState(true);
   const [env, setEnv] = useState<EnvironmentState>({
     temperature: 25,
