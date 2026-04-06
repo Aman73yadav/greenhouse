@@ -626,8 +626,206 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
         </group>
       )}
 
+      {/* Eggplant fruits - large hanging */}
+      {profile.name === 'Eggplant' && stage.fruitCount > 0 && (
+        <group position={[0, stemHeight * 0.55, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => {
+            const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.3;
+            return (
+              <group key={i} position={[Math.cos(a) * 0.2, -0.05 - i * 0.15, Math.sin(a) * 0.2]}>
+                <mesh rotation={[0.2, 0, 0]}>
+                  <cylinderGeometry args={[0.005, 0.004, 0.06, 6]} />
+                  <meshStandardMaterial color="#4A7023" />
+                </mesh>
+                <Float speed={performanceMode ? 0 : 1} floatIntensity={performanceMode ? 0 : 0.03}>
+                  <mesh position={[0, -0.08, 0]}>
+                    <capsuleGeometry args={[0.045 + stage.fruitRipeness * 0.03, 0.06 + stage.fruitRipeness * 0.05, 8, 16]} />
+                    <meshStandardMaterial color={fruitColor} roughness={0.25} metalness={0.15} />
+                  </mesh>
+                  {/* Calyx */}
+                  <mesh position={[0, -0.02, 0]}>
+                    <coneGeometry args={[0.04, 0.03, 6]} />
+                    <meshStandardMaterial color="#2E7D32" roughness={0.5} />
+                  </mesh>
+                </Float>
+              </group>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Pumpkin - large ground fruit */}
+      {profile.name === 'Pumpkin' && stage.fruitCount > 0 && (
+        <group position={[0, -0.25, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => (
+            <group key={i} position={[i * 0.6 - 0.3, 0, 0.35]}>
+              {/* Main body - flattened sphere with ridges */}
+              <mesh scale={[1, 0.7, 1]}>
+                <sphereGeometry args={[0.15 + stage.fruitRipeness * 0.15, 8, 16]} />
+                <meshStandardMaterial color={fruitColor} roughness={0.4} />
+              </mesh>
+              {/* Ridges */}
+              {[0, 1, 2, 3, 4, 5].map(r => {
+                const ra = (r / 6) * Math.PI * 2;
+                return (
+                  <mesh key={r} position={[Math.cos(ra) * (0.12 + stage.fruitRipeness * 0.1), 0, Math.sin(ra) * (0.12 + stage.fruitRipeness * 0.1)]} scale={[0.4, 0.6, 0.4]}>
+                    <sphereGeometry args={[0.08, 6, 6]} />
+                    <meshStandardMaterial color={fruitColor} roughness={0.5} />
+                  </mesh>
+                );
+              })}
+              {/* Stem on top */}
+              <mesh position={[0, 0.12 + stage.fruitRipeness * 0.08, 0]}>
+                <cylinderGeometry args={[0.015, 0.02, 0.06, 6]} />
+                <meshStandardMaterial color="#5D4037" roughness={0.7} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      )}
+
+      {/* Grape clusters */}
+      {profile.name === 'Grape' && stage.fruitCount > 0 && (
+        <group position={[0, stemHeight * 0.6, 0]}>
+          {[...Array(Math.min(stage.fruitCount, 4))].map((_, ci) => {
+            const ca = (ci / 4) * Math.PI * 2 + 0.5;
+            return (
+              <group key={ci} position={[Math.cos(ca) * 0.22, -ci * 0.08, Math.sin(ca) * 0.22]}>
+                {/* Vine */}
+                <mesh>
+                  <cylinderGeometry args={[0.004, 0.003, 0.1, 4]} />
+                  <meshStandardMaterial color="#5D4037" />
+                </mesh>
+                {/* Grape cluster */}
+                <Float speed={performanceMode ? 0 : 1.2} floatIntensity={performanceMode ? 0 : 0.02}>
+                  <group position={[0, -0.08, 0]}>
+                    {[...Array(Math.floor(3 + stage.fruitRipeness * 6))].map((_, gi) => {
+                      const gx = (Math.random() - 0.5) * 0.06;
+                      const gy = -gi * 0.018;
+                      const gz = (Math.random() - 0.5) * 0.06;
+                      return (
+                        <mesh key={gi} position={[gx, gy, gz]}>
+                          <sphereGeometry args={[0.015 + stage.fruitRipeness * 0.005, 8, 8]} />
+                          <meshStandardMaterial color={fruitColor} roughness={0.2} metalness={0.1} />
+                        </mesh>
+                      );
+                    })}
+                  </group>
+                </Float>
+              </group>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Rose - flowers instead of fruits */}
+      {profile.name === 'Rose' && (stage.phase === 'flowering' || stage.phase === 'fruiting' || stage.phase === 'harvest') && (
+        <group position={[0, stemHeight * 0.85, 0]}>
+          {[...Array(Math.min(stage.fruitCount || 1, 3))].map((_, i) => {
+            const a = (i / 3) * Math.PI * 2;
+            return (
+              <group key={i} position={[Math.cos(a) * 0.1 * i, 0.05 * i, Math.sin(a) * 0.1 * i]}>
+                {/* Rose bud center */}
+                <mesh>
+                  <sphereGeometry args={[0.03 + stage.fruitRipeness * 0.02, 10, 10]} />
+                  <meshStandardMaterial color={fruitColor} roughness={0.3} />
+                </mesh>
+                {/* Petals - layered */}
+                {[...Array(Math.floor(5 + stage.fruitRipeness * 8))].map((_, pi) => {
+                  const pa = (pi / 13) * Math.PI * 2;
+                  const layer = Math.floor(pi / 5);
+                  const r = 0.03 + layer * 0.02 + stage.fruitRipeness * 0.015;
+                  return (
+                    <mesh key={pi} position={[Math.cos(pa) * r, -layer * 0.008, Math.sin(pa) * r]} rotation={[0.3 + layer * 0.15, pa, 0]}>
+                      <planeGeometry args={[0.025, 0.03]} />
+                      <meshStandardMaterial color={profile.petalColor} side={THREE.DoubleSide} roughness={0.3} />
+                    </mesh>
+                  );
+                })}
+              </group>
+            );
+          })}
+          {/* Thorns on stem */}
+          {[...Array(4)].map((_, i) => (
+            <mesh key={i} position={[0.04, -stemHeight * 0.2 * (i + 1), 0]} rotation={[0, 0, -0.5]}>
+              <coneGeometry args={[0.008, 0.025, 4]} />
+              <meshStandardMaterial color="#5D4037" />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* Cactus - columnar body with spines */}
+      {profile.name === 'Cactus' && stage.phase !== 'seed' && (
+        <group position={[0, 0, 0]}>
+          {/* Main body */}
+          <mesh position={[0, stemHeight * 0.4, 0]}>
+            <capsuleGeometry args={[0.12 + (stage.heightPercent / 100) * 0.06, stemHeight * 0.6, 8, 16]} />
+            <meshStandardMaterial color="#2E7D32" roughness={0.6} />
+          </mesh>
+          {/* Ridges */}
+          {[...Array(8)].map((_, i) => {
+            const a = (i / 8) * Math.PI * 2;
+            return (
+              <mesh key={i} position={[Math.cos(a) * (0.13 + (stage.heightPercent / 100) * 0.05), stemHeight * 0.4, Math.sin(a) * (0.13 + (stage.heightPercent / 100) * 0.05)]}>
+                <capsuleGeometry args={[0.015, stemHeight * 0.55, 4, 8]} />
+                <meshStandardMaterial color="#388E3C" roughness={0.5} />
+              </mesh>
+            );
+          })}
+          {/* Spines */}
+          {[...Array(Math.min(20, Math.floor(stage.heightPercent / 4)))].map((_, i) => {
+            const a = (i * 2.4);
+            const h = 0.1 + (i / 20) * stemHeight * 0.7;
+            return (
+              <mesh key={i} position={[Math.cos(a) * 0.18, h, Math.sin(a) * 0.18]} rotation={[0, 0, Math.cos(a) * 0.5]}>
+                <cylinderGeometry args={[0.002, 0.001, 0.04, 3]} />
+                <meshStandardMaterial color="#F5F5DC" />
+              </mesh>
+            );
+          })}
+          {/* Arms (mature) */}
+          {stage.heightPercent > 50 && (
+            <>
+              <group position={[0.15, stemHeight * 0.5, 0]} rotation={[0, 0, -0.6]}>
+                <mesh>
+                  <capsuleGeometry args={[0.07, 0.2 + stage.heightPercent * 0.002, 6, 12]} />
+                  <meshStandardMaterial color="#2E7D32" roughness={0.6} />
+                </mesh>
+              </group>
+              {stage.heightPercent > 70 && (
+                <group position={[-0.15, stemHeight * 0.4, 0]} rotation={[0, 0, 0.5]}>
+                  <mesh>
+                    <capsuleGeometry args={[0.06, 0.15 + stage.heightPercent * 0.001, 6, 12]} />
+                    <meshStandardMaterial color="#2E7D32" roughness={0.6} />
+                  </mesh>
+                </group>
+              )}
+            </>
+          )}
+          {/* Cactus flower on top */}
+          {(stage.phase === 'flowering' || stage.phase === 'fruiting' || stage.phase === 'harvest') && (
+            <group position={[0, stemHeight * 0.75, 0]}>
+              <mesh>
+                <sphereGeometry args={[0.03, 8, 8]} />
+                <meshStandardMaterial color="#FFD600" />
+              </mesh>
+              {[...Array(8)].map((_, pi) => {
+                const pa = (pi / 8) * Math.PI * 2;
+                return (
+                  <mesh key={pi} position={[Math.cos(pa) * 0.04, 0, Math.sin(pa) * 0.04]} rotation={[0.4, pa, 0]}>
+                    <planeGeometry args={[0.025, 0.035]} />
+                    <meshStandardMaterial color={profile.petalColor} side={THREE.DoubleSide} />
+                  </mesh>
+                );
+              })}
+            </group>
+          )}
+        </group>
+      )}
+
       {/* Generic fruits (tomato, pepper, strawberry) */}
-      {stage.fruitCount > 0 && !['Corn', 'Sunflower', 'Watermelon', 'Cucumber', 'Carrot'].includes(profile.name) && (
+      {stage.fruitCount > 0 && !['Corn', 'Sunflower', 'Watermelon', 'Cucumber', 'Carrot', 'Eggplant', 'Pumpkin', 'Grape', 'Rose', 'Cactus'].includes(profile.name) && (
         <group position={[0, stemHeight * 0.65, 0]}>
           {[...Array(stage.fruitCount)].map((_, i) => {
             const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.4;
