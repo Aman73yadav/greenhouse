@@ -922,16 +922,17 @@ const Ground = ({ isRaining }: { isRaining: boolean }) => (
 // ===================== SCENE =====================
 
 const LifecycleScene = ({
-  currentDay, controlsRef, enableZoom, performanceMode, zoomSpeed, viewMode, profile, env
+  currentDay, controlsRef, enableZoom, performanceMode, zoomSpeed, viewMode, profile, env, compareProfile
 }: {
   currentDay: number;
   controlsRef: React.RefObject<any>;
   enableZoom: boolean;
   performanceMode: boolean;
   zoomSpeed: number;
-  viewMode: 'single' | 'timeline';
+  viewMode: 'single' | 'timeline' | 'compare';
   profile: PlantProfile;
   env: EnvironmentState;
+  compareProfile?: PlantProfile;
 }) => {
   const stage = getDayStage(currentDay, profile);
   const lightLevel = env.lightsOn ? Math.min(100, env.light + 30) : env.light;
@@ -939,6 +940,9 @@ const LifecycleScene = ({
   const dirIntensity = performanceMode ? 0.6 : 0.3 + (lightLevel / 100) * 0.6;
   const tempFactor = (env.temperature - 10) / 30;
   const dirColor = tempFactor > 0.6 ? '#FFE0B2' : tempFactor < 0.3 ? '#E3F2FD' : '#FFF8E1';
+
+  const compareDay = compareProfile ? Math.min(currentDay, compareProfile.totalDays) : 1;
+  const compareStage = compareProfile ? getDayStage(compareDay, compareProfile) : null;
 
   return (
     <>
@@ -948,6 +952,50 @@ const LifecycleScene = ({
 
       {viewMode === 'single' ? (
         <PlantModel stage={stage} profile={profile} performanceMode={performanceMode} env={env} />
+      ) : viewMode === 'compare' && compareProfile && compareStage ? (
+        <group>
+          {/* Left plant */}
+          <group position={[-1.5, 0, 0]}>
+            <PlantModel stage={stage} profile={profile} performanceMode={performanceMode} env={env} />
+            <Html position={[0, -1, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+              <div className="bg-primary/90 text-primary-foreground rounded-lg px-3 py-1 text-xs font-bold whitespace-nowrap">
+                {profile.emoji} {profile.name} — Day {currentDay}
+              </div>
+            </Html>
+          </group>
+          {/* Right plant */}
+          <group position={[1.5, 0, 0]}>
+            <PlantModel stage={compareStage} profile={compareProfile} performanceMode={performanceMode} env={env} />
+            <Html position={[0, -1, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+              <div className="bg-secondary text-secondary-foreground rounded-lg px-3 py-1 text-xs font-bold whitespace-nowrap">
+                {compareProfile.emoji} {compareProfile.name} — Day {compareDay}
+              </div>
+            </Html>
+          </group>
+          {/* Comparison stats HUD */}
+          <Html position={[0, 3.5, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+            <div className="bg-background/90 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-3 shadow-xl min-w-[280px]">
+              <div className="text-xs font-bold text-foreground border-b border-border/30 pb-1 mb-2 text-center">Side-by-Side Comparison</div>
+              <div className="grid grid-cols-3 gap-1 text-[10px]">
+                <div className="text-right font-bold text-foreground">{stage.heightPercent.toFixed(0)}%</div>
+                <div className="text-center text-muted-foreground">Growth</div>
+                <div className="text-left font-bold text-foreground">{compareStage.heightPercent.toFixed(0)}%</div>
+                <div className="text-right font-bold text-foreground">{stage.leafCount}</div>
+                <div className="text-center text-muted-foreground">Leaves</div>
+                <div className="text-left font-bold text-foreground">{compareStage.leafCount}</div>
+                <div className="text-right font-bold text-foreground">{stage.fruitCount}</div>
+                <div className="text-center text-muted-foreground">Fruits</div>
+                <div className="text-left font-bold text-foreground">{compareStage.fruitCount}</div>
+                <div className="text-right font-bold text-foreground">{(computeGrowthSpeed(env, profile) * 100).toFixed(0)}%</div>
+                <div className="text-center text-muted-foreground">Speed</div>
+                <div className="text-left font-bold text-foreground">{(computeGrowthSpeed(env, compareProfile) * 100).toFixed(0)}%</div>
+                <div className="text-right font-bold text-foreground">{stage.name}</div>
+                <div className="text-center text-muted-foreground">Phase</div>
+                <div className="text-left font-bold text-foreground">{compareStage.name}</div>
+              </div>
+            </div>
+          </Html>
+        </group>
       ) : (
         <TimelinePlants currentDay={currentDay} profile={profile} performanceMode={performanceMode} env={env} />
       )}
@@ -956,7 +1004,6 @@ const LifecycleScene = ({
       <RainEffect active={env.isRaining} performanceMode={performanceMode} />
       {viewMode === 'single' && <SensorHUD env={env} profile={profile} />}
 
-      {/* Rain mist sparkles */}
       {env.isRaining && !performanceMode && (
         <Sparkles count={40} scale={[6, 1, 6]} position={[0, 0, 0]} size={1} speed={0.4} opacity={0.3} color="#90CAF9" />
       )}
