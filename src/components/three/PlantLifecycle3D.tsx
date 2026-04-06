@@ -1086,16 +1086,17 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   // Auto-play with speed affected by environment
   useEffect(() => {
     if (isPlaying) {
+      const playMax = viewMode === 'compare' ? maxDay : profile.totalDays;
       const interval = Math.max(50, 200 / Math.max(0.2, growthSpeed));
       playIntervalRef.current = setInterval(() => {
         setCurrentDay(prev => {
-          if (prev >= profile.totalDays) { setIsPlaying(false); return profile.totalDays; }
+          if (prev >= playMax) { setIsPlaying(false); return playMax; }
           return prev + 1;
         });
       }, interval);
     }
     return () => { if (playIntervalRef.current) clearInterval(playIntervalRef.current); };
-  }, [isPlaying, growthSpeed, profile.totalDays]);
+  }, [isPlaying, growthSpeed, profile.totalDays, viewMode, maxDay]);
 
   const jumpToHarvest = useCallback(() => { setCurrentDay(bestDay); setIsPlaying(false); }, [bestDay]);
 
