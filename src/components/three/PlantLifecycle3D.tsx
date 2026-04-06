@@ -11,7 +11,7 @@ import { Play, Pause, SkipForward, SkipBack, Calendar, Sprout, Apple, Sun, Cloud
 
 // ===================== TYPES =====================
 
-type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry' | 'corn' | 'sunflower' | 'basil' | 'cucumber' | 'watermelon' | 'carrot';
+type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry' | 'corn' | 'sunflower' | 'basil' | 'cucumber' | 'watermelon' | 'carrot' | 'eggplant' | 'pumpkin' | 'grape' | 'rose' | 'cactus';
 
 interface PlantProfile {
   name: string;
