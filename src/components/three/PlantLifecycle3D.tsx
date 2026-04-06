@@ -11,7 +11,7 @@ import { Play, Pause, SkipForward, SkipBack, Calendar, Sprout, Apple, Sun, Cloud
 
 // ===================== TYPES =====================
 
-type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry' | 'corn' | 'sunflower' | 'basil' | 'cucumber' | 'watermelon' | 'carrot';
+type PlantType = 'tomato' | 'pepper' | 'lettuce' | 'strawberry' | 'corn' | 'sunflower' | 'basil' | 'cucumber' | 'watermelon' | 'carrot' | 'eggplant' | 'pumpkin' | 'grape' | 'rose' | 'cactus';
 
 interface PlantProfile {
   name: string;
@@ -85,6 +85,31 @@ const PLANT_PROFILES: Record<PlantType, PlantProfile> = {
     name: 'Carrot', emoji: '🥕', totalDays: 80, bestHarvestDay: 72, stemColor: '#33691E', leafColor: '#66BB6A', leafColorYoung: '#A5D6A7',
     fruitColorUnripe: '#FFB74D', fruitColorRipe: '#E65100', flowerColor: '#FFFFFF', petalColor: '#F5F5F5',
     maxFruits: 1, maxLeaves: 8, idealTemp: 18, idealHumidity: 60, idealLight: 65, fruitShape: 'cone', rootVegetable: true,
+  },
+  eggplant: {
+    name: 'Eggplant', emoji: '🍆', totalDays: 100, bestHarvestDay: 92, stemColor: '#4A148C', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#4A148C', flowerColor: '#CE93D8', petalColor: '#E1BEE7',
+    maxFruits: 4, maxLeaves: 10, idealTemp: 27, idealHumidity: 65, idealLight: 80, fruitShape: 'elongated',
+  },
+  pumpkin: {
+    name: 'Pumpkin', emoji: '🎃', totalDays: 120, bestHarvestDay: 110, stemColor: '#33691E', leafColor: '#4CAF50', leafColorYoung: '#81C784',
+    fruitColorUnripe: '#81C784', fruitColorRipe: '#E65100', flowerColor: '#FFB300', petalColor: '#FFE082',
+    maxFruits: 2, maxLeaves: 14, idealTemp: 24, idealHumidity: 60, idealLight: 85, fruitShape: 'sphere',
+  },
+  grape: {
+    name: 'Grape', emoji: '🍇', totalDays: 140, bestHarvestDay: 130, stemColor: '#5D4037', leafColor: '#388E3C', leafColorYoung: '#66BB6A',
+    fruitColorUnripe: '#A5D6A7', fruitColorRipe: '#6A1B9A', flowerColor: '#E8F5E9', petalColor: '#C8E6C9',
+    maxFruits: 6, maxLeaves: 12, idealTemp: 22, idealHumidity: 55, idealLight: 80, fruitShape: 'sphere',
+  },
+  rose: {
+    name: 'Rose', emoji: '🌹', totalDays: 90, bestHarvestDay: 80, stemColor: '#2E7D32', leafColor: '#388E3C', leafColorYoung: '#66BB6A',
+    fruitColorUnripe: '#F48FB1', fruitColorRipe: '#C62828', flowerColor: '#E53935', petalColor: '#EF5350',
+    maxFruits: 3, maxLeaves: 8, idealTemp: 20, idealHumidity: 60, idealLight: 70, fruitShape: 'sphere',
+  },
+  cactus: {
+    name: 'Cactus', emoji: '🌵', totalDays: 180, bestHarvestDay: 170, stemColor: '#2E7D32', leafColor: '#388E3C', leafColorYoung: '#4CAF50',
+    fruitColorUnripe: '#F48FB1', fruitColorRipe: '#E91E63', flowerColor: '#FF4081', petalColor: '#F8BBD0',
+    maxFruits: 2, maxLeaves: 0, idealTemp: 30, idealHumidity: 25, idealLight: 95, fruitShape: 'sphere',
   },
 };
 
@@ -601,8 +626,206 @@ const PlantModel = ({ stage, profile, performanceMode, env }: PlantModelProps) =
         </group>
       )}
 
+      {/* Eggplant fruits - large hanging */}
+      {profile.name === 'Eggplant' && stage.fruitCount > 0 && (
+        <group position={[0, stemHeight * 0.55, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => {
+            const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.3;
+            return (
+              <group key={i} position={[Math.cos(a) * 0.2, -0.05 - i * 0.15, Math.sin(a) * 0.2]}>
+                <mesh rotation={[0.2, 0, 0]}>
+                  <cylinderGeometry args={[0.005, 0.004, 0.06, 6]} />
+                  <meshStandardMaterial color="#4A7023" />
+                </mesh>
+                <Float speed={performanceMode ? 0 : 1} floatIntensity={performanceMode ? 0 : 0.03}>
+                  <mesh position={[0, -0.08, 0]}>
+                    <capsuleGeometry args={[0.045 + stage.fruitRipeness * 0.03, 0.06 + stage.fruitRipeness * 0.05, 8, 16]} />
+                    <meshStandardMaterial color={fruitColor} roughness={0.25} metalness={0.15} />
+                  </mesh>
+                  {/* Calyx */}
+                  <mesh position={[0, -0.02, 0]}>
+                    <coneGeometry args={[0.04, 0.03, 6]} />
+                    <meshStandardMaterial color="#2E7D32" roughness={0.5} />
+                  </mesh>
+                </Float>
+              </group>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Pumpkin - large ground fruit */}
+      {profile.name === 'Pumpkin' && stage.fruitCount > 0 && (
+        <group position={[0, -0.25, 0]}>
+          {[...Array(stage.fruitCount)].map((_, i) => (
+            <group key={i} position={[i * 0.6 - 0.3, 0, 0.35]}>
+              {/* Main body - flattened sphere with ridges */}
+              <mesh scale={[1, 0.7, 1]}>
+                <sphereGeometry args={[0.15 + stage.fruitRipeness * 0.15, 8, 16]} />
+                <meshStandardMaterial color={fruitColor} roughness={0.4} />
+              </mesh>
+              {/* Ridges */}
+              {[0, 1, 2, 3, 4, 5].map(r => {
+                const ra = (r / 6) * Math.PI * 2;
+                return (
+                  <mesh key={r} position={[Math.cos(ra) * (0.12 + stage.fruitRipeness * 0.1), 0, Math.sin(ra) * (0.12 + stage.fruitRipeness * 0.1)]} scale={[0.4, 0.6, 0.4]}>
+                    <sphereGeometry args={[0.08, 6, 6]} />
+                    <meshStandardMaterial color={fruitColor} roughness={0.5} />
+                  </mesh>
+                );
+              })}
+              {/* Stem on top */}
+              <mesh position={[0, 0.12 + stage.fruitRipeness * 0.08, 0]}>
+                <cylinderGeometry args={[0.015, 0.02, 0.06, 6]} />
+                <meshStandardMaterial color="#5D4037" roughness={0.7} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      )}
+
+      {/* Grape clusters */}
+      {profile.name === 'Grape' && stage.fruitCount > 0 && (
+        <group position={[0, stemHeight * 0.6, 0]}>
+          {[...Array(Math.min(stage.fruitCount, 4))].map((_, ci) => {
+            const ca = (ci / 4) * Math.PI * 2 + 0.5;
+            return (
+              <group key={ci} position={[Math.cos(ca) * 0.22, -ci * 0.08, Math.sin(ca) * 0.22]}>
+                {/* Vine */}
+                <mesh>
+                  <cylinderGeometry args={[0.004, 0.003, 0.1, 4]} />
+                  <meshStandardMaterial color="#5D4037" />
+                </mesh>
+                {/* Grape cluster */}
+                <Float speed={performanceMode ? 0 : 1.2} floatIntensity={performanceMode ? 0 : 0.02}>
+                  <group position={[0, -0.08, 0]}>
+                    {[...Array(Math.floor(3 + stage.fruitRipeness * 6))].map((_, gi) => {
+                      const gx = (Math.random() - 0.5) * 0.06;
+                      const gy = -gi * 0.018;
+                      const gz = (Math.random() - 0.5) * 0.06;
+                      return (
+                        <mesh key={gi} position={[gx, gy, gz]}>
+                          <sphereGeometry args={[0.015 + stage.fruitRipeness * 0.005, 8, 8]} />
+                          <meshStandardMaterial color={fruitColor} roughness={0.2} metalness={0.1} />
+                        </mesh>
+                      );
+                    })}
+                  </group>
+                </Float>
+              </group>
+            );
+          })}
+        </group>
+      )}
+
+      {/* Rose - flowers instead of fruits */}
+      {profile.name === 'Rose' && (stage.phase === 'flowering' || stage.phase === 'fruiting' || stage.phase === 'harvest') && (
+        <group position={[0, stemHeight * 0.85, 0]}>
+          {[...Array(Math.min(stage.fruitCount || 1, 3))].map((_, i) => {
+            const a = (i / 3) * Math.PI * 2;
+            return (
+              <group key={i} position={[Math.cos(a) * 0.1 * i, 0.05 * i, Math.sin(a) * 0.1 * i]}>
+                {/* Rose bud center */}
+                <mesh>
+                  <sphereGeometry args={[0.03 + stage.fruitRipeness * 0.02, 10, 10]} />
+                  <meshStandardMaterial color={fruitColor} roughness={0.3} />
+                </mesh>
+                {/* Petals - layered */}
+                {[...Array(Math.floor(5 + stage.fruitRipeness * 8))].map((_, pi) => {
+                  const pa = (pi / 13) * Math.PI * 2;
+                  const layer = Math.floor(pi / 5);
+                  const r = 0.03 + layer * 0.02 + stage.fruitRipeness * 0.015;
+                  return (
+                    <mesh key={pi} position={[Math.cos(pa) * r, -layer * 0.008, Math.sin(pa) * r]} rotation={[0.3 + layer * 0.15, pa, 0]}>
+                      <planeGeometry args={[0.025, 0.03]} />
+                      <meshStandardMaterial color={profile.petalColor} side={THREE.DoubleSide} roughness={0.3} />
+                    </mesh>
+                  );
+                })}
+              </group>
+            );
+          })}
+          {/* Thorns on stem */}
+          {[...Array(4)].map((_, i) => (
+            <mesh key={i} position={[0.04, -stemHeight * 0.2 * (i + 1), 0]} rotation={[0, 0, -0.5]}>
+              <coneGeometry args={[0.008, 0.025, 4]} />
+              <meshStandardMaterial color="#5D4037" />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* Cactus - columnar body with spines */}
+      {profile.name === 'Cactus' && stage.phase !== 'seed' && (
+        <group position={[0, 0, 0]}>
+          {/* Main body */}
+          <mesh position={[0, stemHeight * 0.4, 0]}>
+            <capsuleGeometry args={[0.12 + (stage.heightPercent / 100) * 0.06, stemHeight * 0.6, 8, 16]} />
+            <meshStandardMaterial color="#2E7D32" roughness={0.6} />
+          </mesh>
+          {/* Ridges */}
+          {[...Array(8)].map((_, i) => {
+            const a = (i / 8) * Math.PI * 2;
+            return (
+              <mesh key={i} position={[Math.cos(a) * (0.13 + (stage.heightPercent / 100) * 0.05), stemHeight * 0.4, Math.sin(a) * (0.13 + (stage.heightPercent / 100) * 0.05)]}>
+                <capsuleGeometry args={[0.015, stemHeight * 0.55, 4, 8]} />
+                <meshStandardMaterial color="#388E3C" roughness={0.5} />
+              </mesh>
+            );
+          })}
+          {/* Spines */}
+          {[...Array(Math.min(20, Math.floor(stage.heightPercent / 4)))].map((_, i) => {
+            const a = (i * 2.4);
+            const h = 0.1 + (i / 20) * stemHeight * 0.7;
+            return (
+              <mesh key={i} position={[Math.cos(a) * 0.18, h, Math.sin(a) * 0.18]} rotation={[0, 0, Math.cos(a) * 0.5]}>
+                <cylinderGeometry args={[0.002, 0.001, 0.04, 3]} />
+                <meshStandardMaterial color="#F5F5DC" />
+              </mesh>
+            );
+          })}
+          {/* Arms (mature) */}
+          {stage.heightPercent > 50 && (
+            <>
+              <group position={[0.15, stemHeight * 0.5, 0]} rotation={[0, 0, -0.6]}>
+                <mesh>
+                  <capsuleGeometry args={[0.07, 0.2 + stage.heightPercent * 0.002, 6, 12]} />
+                  <meshStandardMaterial color="#2E7D32" roughness={0.6} />
+                </mesh>
+              </group>
+              {stage.heightPercent > 70 && (
+                <group position={[-0.15, stemHeight * 0.4, 0]} rotation={[0, 0, 0.5]}>
+                  <mesh>
+                    <capsuleGeometry args={[0.06, 0.15 + stage.heightPercent * 0.001, 6, 12]} />
+                    <meshStandardMaterial color="#2E7D32" roughness={0.6} />
+                  </mesh>
+                </group>
+              )}
+            </>
+          )}
+          {/* Cactus flower on top */}
+          {(stage.phase === 'flowering' || stage.phase === 'fruiting' || stage.phase === 'harvest') && (
+            <group position={[0, stemHeight * 0.75, 0]}>
+              <mesh>
+                <sphereGeometry args={[0.03, 8, 8]} />
+                <meshStandardMaterial color="#FFD600" />
+              </mesh>
+              {[...Array(8)].map((_, pi) => {
+                const pa = (pi / 8) * Math.PI * 2;
+                return (
+                  <mesh key={pi} position={[Math.cos(pa) * 0.04, 0, Math.sin(pa) * 0.04]} rotation={[0.4, pa, 0]}>
+                    <planeGeometry args={[0.025, 0.035]} />
+                    <meshStandardMaterial color={profile.petalColor} side={THREE.DoubleSide} />
+                  </mesh>
+                );
+              })}
+            </group>
+          )}
+        </group>
+      )}
+
       {/* Generic fruits (tomato, pepper, strawberry) */}
-      {stage.fruitCount > 0 && !['Corn', 'Sunflower', 'Watermelon', 'Cucumber', 'Carrot'].includes(profile.name) && (
+      {stage.fruitCount > 0 && !['Corn', 'Sunflower', 'Watermelon', 'Cucumber', 'Carrot', 'Eggplant', 'Pumpkin', 'Grape', 'Rose', 'Cactus'].includes(profile.name) && (
         <group position={[0, stemHeight * 0.65, 0]}>
           {[...Array(stage.fruitCount)].map((_, i) => {
             const a = (i / Math.max(stage.fruitCount, 1)) * Math.PI * 2 + 0.4;
@@ -699,16 +922,17 @@ const Ground = ({ isRaining }: { isRaining: boolean }) => (
 // ===================== SCENE =====================
 
 const LifecycleScene = ({
-  currentDay, controlsRef, enableZoom, performanceMode, zoomSpeed, viewMode, profile, env
+  currentDay, controlsRef, enableZoom, performanceMode, zoomSpeed, viewMode, profile, env, compareProfile
 }: {
   currentDay: number;
   controlsRef: React.RefObject<any>;
   enableZoom: boolean;
   performanceMode: boolean;
   zoomSpeed: number;
-  viewMode: 'single' | 'timeline';
+  viewMode: 'single' | 'timeline' | 'compare';
   profile: PlantProfile;
   env: EnvironmentState;
+  compareProfile?: PlantProfile;
 }) => {
   const stage = getDayStage(currentDay, profile);
   const lightLevel = env.lightsOn ? Math.min(100, env.light + 30) : env.light;
@@ -716,6 +940,9 @@ const LifecycleScene = ({
   const dirIntensity = performanceMode ? 0.6 : 0.3 + (lightLevel / 100) * 0.6;
   const tempFactor = (env.temperature - 10) / 30;
   const dirColor = tempFactor > 0.6 ? '#FFE0B2' : tempFactor < 0.3 ? '#E3F2FD' : '#FFF8E1';
+
+  const compareDay = compareProfile ? Math.min(currentDay, compareProfile.totalDays) : 1;
+  const compareStage = compareProfile ? getDayStage(compareDay, compareProfile) : null;
 
   return (
     <>
@@ -725,6 +952,50 @@ const LifecycleScene = ({
 
       {viewMode === 'single' ? (
         <PlantModel stage={stage} profile={profile} performanceMode={performanceMode} env={env} />
+      ) : viewMode === 'compare' && compareProfile && compareStage ? (
+        <group>
+          {/* Left plant */}
+          <group position={[-1.5, 0, 0]}>
+            <PlantModel stage={stage} profile={profile} performanceMode={performanceMode} env={env} />
+            <Html position={[0, -1, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+              <div className="bg-primary/90 text-primary-foreground rounded-lg px-3 py-1 text-xs font-bold whitespace-nowrap">
+                {profile.emoji} {profile.name} — Day {currentDay}
+              </div>
+            </Html>
+          </group>
+          {/* Right plant */}
+          <group position={[1.5, 0, 0]}>
+            <PlantModel stage={compareStage} profile={compareProfile} performanceMode={performanceMode} env={env} />
+            <Html position={[0, -1, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+              <div className="bg-secondary text-secondary-foreground rounded-lg px-3 py-1 text-xs font-bold whitespace-nowrap">
+                {compareProfile.emoji} {compareProfile.name} — Day {compareDay}
+              </div>
+            </Html>
+          </group>
+          {/* Comparison stats HUD */}
+          <Html position={[0, 3.5, 0]} center distanceFactor={8} style={{ pointerEvents: 'none' }}>
+            <div className="bg-background/90 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-3 shadow-xl min-w-[280px]">
+              <div className="text-xs font-bold text-foreground border-b border-border/30 pb-1 mb-2 text-center">Side-by-Side Comparison</div>
+              <div className="grid grid-cols-3 gap-1 text-[10px]">
+                <div className="text-right font-bold text-foreground">{stage.heightPercent.toFixed(0)}%</div>
+                <div className="text-center text-muted-foreground">Growth</div>
+                <div className="text-left font-bold text-foreground">{compareStage.heightPercent.toFixed(0)}%</div>
+                <div className="text-right font-bold text-foreground">{stage.leafCount}</div>
+                <div className="text-center text-muted-foreground">Leaves</div>
+                <div className="text-left font-bold text-foreground">{compareStage.leafCount}</div>
+                <div className="text-right font-bold text-foreground">{stage.fruitCount}</div>
+                <div className="text-center text-muted-foreground">Fruits</div>
+                <div className="text-left font-bold text-foreground">{compareStage.fruitCount}</div>
+                <div className="text-right font-bold text-foreground">{(computeGrowthSpeed(env, profile) * 100).toFixed(0)}%</div>
+                <div className="text-center text-muted-foreground">Speed</div>
+                <div className="text-left font-bold text-foreground">{(computeGrowthSpeed(env, compareProfile) * 100).toFixed(0)}%</div>
+                <div className="text-right font-bold text-foreground">{stage.name}</div>
+                <div className="text-center text-muted-foreground">Phase</div>
+                <div className="text-left font-bold text-foreground">{compareStage.name}</div>
+              </div>
+            </div>
+          </Html>
+        </group>
       ) : (
         <TimelinePlants currentDay={currentDay} profile={profile} performanceMode={performanceMode} env={env} />
       )}
@@ -733,7 +1004,6 @@ const LifecycleScene = ({
       <RainEffect active={env.isRaining} performanceMode={performanceMode} />
       {viewMode === 'single' && <SensorHUD env={env} profile={profile} />}
 
-      {/* Rain mist sparkles */}
       {env.isRaining && !performanceMode && (
         <Sparkles count={40} scale={[6, 1, 6]} position={[0, 0, 0]} size={1} speed={0.4} opacity={0.3} color="#90CAF9" />
       )}
@@ -760,6 +1030,7 @@ const LifecycleScene = ({
 
 const DEFAULT_CAMERA_SINGLE: [number, number, number] = [4, 3, 4];
 const DEFAULT_CAMERA_TIMELINE: [number, number, number] = [0, 5, 12];
+const DEFAULT_CAMERA_COMPARE: [number, number, number] = [5, 3.5, 5];
 const DEFAULT_TARGET: [number, number, number] = [0, 0.8, 0];
 
 interface PlantLifecycle3DProps {
@@ -775,7 +1046,8 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const [plantType, setPlantType] = useState<PlantType>('tomato');
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [viewMode, setViewMode] = useState<'single' | 'timeline'>('single');
+  const [viewMode, setViewMode] = useState<'single' | 'timeline' | 'compare'>('single');
+  const [compareType, setCompareType] = useState<PlantType>('pepper');
   const [useLiveData, setUseLiveData] = useState(true);
   const [env, setEnv] = useState<EnvironmentState>({
     temperature: 25,
@@ -787,10 +1059,12 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const profile = PLANT_PROFILES[plantType];
+  const compareProfile = PLANT_PROFILES[compareType];
   const stage = getDayStage(currentDay, profile);
   const bestDay = profile.bestHarvestDay;
   const isHarvestWindow = currentDay >= Math.floor(profile.totalDays * 0.87);
   const growthSpeed = computeGrowthSpeed(env, profile);
+  const maxDay = viewMode === 'compare' ? Math.max(profile.totalDays, compareProfile.totalDays) : profile.totalDays;
 
   // Sync live sensor data when enabled
   useEffect(() => {
@@ -813,16 +1087,17 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
   // Auto-play with speed affected by environment
   useEffect(() => {
     if (isPlaying) {
+      const playMax = viewMode === 'compare' ? maxDay : profile.totalDays;
       const interval = Math.max(50, 200 / Math.max(0.2, growthSpeed));
       playIntervalRef.current = setInterval(() => {
         setCurrentDay(prev => {
-          if (prev >= profile.totalDays) { setIsPlaying(false); return profile.totalDays; }
+          if (prev >= playMax) { setIsPlaying(false); return playMax; }
           return prev + 1;
         });
       }, interval);
     }
     return () => { if (playIntervalRef.current) clearInterval(playIntervalRef.current); };
-  }, [isPlaying, growthSpeed, profile.totalDays]);
+  }, [isPlaying, growthSpeed, profile.totalDays, viewMode, maxDay]);
 
   const jumpToHarvest = useCallback(() => { setCurrentDay(bestDay); setIsPlaying(false); }, [bestDay]);
 
@@ -835,7 +1110,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
     harvest: 'hsl(0, 72%, 51%)',
   };
 
-  const totalDays = profile.totalDays;
+  const totalDays = viewMode === 'compare' ? maxDay : profile.totalDays;
 
   return (
     <Fullscreen3DWrapper
@@ -849,7 +1124,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
         <>
           <Canvas shadows={!performanceMode}>
             <SceneCapture sceneRef={sceneRef} />
-            <PerspectiveCamera makeDefault position={viewMode === 'timeline' ? DEFAULT_CAMERA_TIMELINE : DEFAULT_CAMERA_SINGLE} fov={45} />
+            <PerspectiveCamera makeDefault position={viewMode === 'timeline' ? DEFAULT_CAMERA_TIMELINE : viewMode === 'compare' ? DEFAULT_CAMERA_COMPARE : DEFAULT_CAMERA_SINGLE} fov={45} />
             <Suspense fallback={null}>
               <LifecycleScene
                 currentDay={currentDay}
@@ -860,6 +1135,7 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
                 viewMode={viewMode}
                 profile={profile}
                 env={env}
+                compareProfile={viewMode === 'compare' ? compareProfile : undefined}
               />
             </Suspense>
           </Canvas>
@@ -1016,14 +1292,32 @@ const PlantLifecycle3D = ({ liveSensorData }: PlantLifecycle3DProps) => {
                 {/* Right: view mode + info */}
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">View</div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     <Button size="sm" variant={viewMode === 'single' ? 'default' : 'outline'} onClick={() => setViewMode('single')} className="text-[10px] h-7 flex-1">
                       🌱 Plant
+                    </Button>
+                    <Button size="sm" variant={viewMode === 'compare' ? 'default' : 'outline'} onClick={() => setViewMode('compare')} className="text-[10px] h-7 flex-1">
+                      ⚖️ Compare
                     </Button>
                     <Button size="sm" variant={viewMode === 'timeline' ? 'default' : 'outline'} onClick={() => setViewMode('timeline')} className="text-[10px] h-7 flex-1">
                       📊 Stages
                     </Button>
                   </div>
+                  {viewMode === 'compare' && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">vs</span>
+                      <Select value={compareType} onValueChange={(v) => setCompareType(v as PlantType)}>
+                        <SelectTrigger className="h-7 text-[10px] flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(PLANT_PROFILES).filter(([key]) => key !== plantType).map(([key, p]) => (
+                            <SelectItem key={key} value={key}>{p.emoji} {p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="text-[10px] text-muted-foreground space-y-0.5 p-2 bg-muted/30 rounded-lg">
                     <div>Ideal: {profile.idealTemp}°C / {profile.idealHumidity}% RH / {profile.idealLight}% light</div>
                     <div>Harvest: Day {bestDay} ({Math.ceil(bestDay / 7)} weeks)</div>
