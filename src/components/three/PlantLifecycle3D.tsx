@@ -1031,6 +1031,7 @@ const LifecycleScene = ({
 const DEFAULT_CAMERA_SINGLE: [number, number, number] = [4, 3, 4];
 const DEFAULT_CAMERA_TIMELINE: [number, number, number] = [0, 5, 12];
 const DEFAULT_CAMERA_COMPARE: [number, number, number] = [5, 3.5, 5];
+const DEFAULT_TARGET: [number, number, number] = [0, 0.8, 0];
 
 interface PlantLifecycle3DProps {
   liveSensorData?: {
